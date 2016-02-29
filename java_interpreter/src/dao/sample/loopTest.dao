@@ -1,0 +1,60 @@
+@@ Loop problem
+@@ loop over an amount of times
+@@ Print a regular expression.
+@@ target: "..00012341234123412341234999"
+@@ THAT IS,
+@@..000
+@@..1234 x4
+@@..999
+
+|~	Structure:
+|		Allocate byte	
+|		Write A
+|		Read A
+|	
+|		Set up program to write and read middleportion
+|		Loop outer program to
+|			Loop inner program
+|	
+|	
+|	
+|	
+|	
+|	
+|	
+
+
+|	Great, we need to make a counter.
+|	
+|
+|
+
+
+
+||| program to count down
+
+| 2 Bits (because then we can count down on 4 bits)
+
+| Permutation cycles...? Should we find permutation cycles?
+
+!  $$[[]/[]]  (*!</)
+
+			[0]						| INIT
+!			[0]						|
+$			[00]					| 
+$			[0000]					|
+$(			[0000] 0000			   )| initialized enough		
+[[]/[]]		[1010] 0000				|		
+(			[10]10 0000			   )|
+*			[10]10 0000				| POLAR (YES)
+<			[10]10 0000 <			| UP
+!			[01]10 0000 <			| FLIP
+. .			[01]10 0000 <			| DOALC IDLES
+
+
+| This isn't going to work nicely at all. I'll leave the headache for later.
+
+
+
+
+

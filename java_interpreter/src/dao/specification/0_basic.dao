@@ -1,0 +1,129 @@
+| ____________________________________________________________________
+|/
+||	Terminology:
+||		 ___________________ ____________ __________________________________
+||		|					|			 |									|
+||		|	What it is		|	Themed	 |			Explanation	 			|
+||		|___________________|____________|__________________________________|
+||
+||		Native				::	Heaven	::	Non-Dao code running Dao code
+||		Autointerpreter		::	Sage	::	Dao code running Dao code
+||		Dao					::	Path	::	Dao code not running Dao code
+||		Data				::	Record	::	Data being manipulated
+||		Instruction pointer	::	Gaze	::	Location of executing pointer
+||		Data pointer		::	Brush	::	Location of manipulation pointer
+||		Level				::				Hard to explain
+||
+||
+
+|=================================|
+|	BASICS: SIMPLE MANIPULATION   |
+|=================================|
+
+@@ This Dao is Former heaven - 10 order, LR selection.
+
+@@ DOALC - doubles memory available and doubles selection // increments depth
+$
+
+@@ DEALC - halves memory and selection available // decrements depth
+S
+
+@@ SPLIT - sets first half of selection to 1, second half to 0, splits selection
+[
+
+@@ HALVE - splits selection
+(
+
+@@ MERGE - unsplits selection (not REALLY necessary)
+)]
+
+@@ SWAPS - swaps the two halves of the selection
+!
+
+@@ LATER - goes to the next branch of the split selection ((0)0) -> (0(0))
+/
+
+@@ IDLES - does nothing
+.
+
+|
+|	Edge cases:
+|
+|		bit selection
+|			DEALC terminates the program.	
+|			SPLIT descends datasel and acts
+|			HALVE descends datasel
+|			SWAPS idles
+|
+|		universal selection:			
+|			MERGE ascends datasel
+|
+
+
+|
+|	Flow
+|
+
+@@ POLAR - if selection is polar, perform next operation. else, skip.
+*
+
+@@ EQUAL - if selection is equal, perform next operation. else, skip.
+=
+
+@@ UPLEV -	start program over on higher level
+<
+
+@@ DELEV -	drop level without restarting pointer
+>
+
+@@ EXECS - 	executes selection as nybble code, transforms the data pointer into an owned instruction pointer if data pointer.
+#
+
+@@ FORKS -	evaluate selection to two bits (LR) - determines execution pattern of internals.
+
+| LEVEL |
+|
+|
+|	0
+|		drop does nothing.
+|		normal execution
+|
+|	1
+|		SPLIT HALVE
+|		DOALC IDLES
+|
+|	2
+|		SWAPS IDLES
+|		DEALC IDLES
+|
+
+| EXECS |
+|			INSTR -> DATAP				initial setup
+|			  #   -> DATAP				call #
+|			  #   -> INSTR ->			instructionify
+|			  #   -> INSTR -> DATAP		initialize data for new instructions
+|			  #   ->   X   -> DATAP		perform selection as instruction
+| 		   	When executing the selection would result in termination,
+|			  #   ->   S   ->   b		DEALC when only one bit left ( # calls S on single bit memory )
+|			  #	  ->  bbBB ->	b		terminating instruction is replaced. (B = ~b)
+|			  #	  ->  DATA -X			becomes data pointer
+|			  #	  ->  DATA 				good
+
+| FORKS |
+|			bit eval to AB
+|				A: "REPEAT BIT"
+|					means that when 
+|
+|
+|
+|
+|
+|
+
+|
+| Goal: Implement "NAND" using TRUTH VALUE "POLAR"
+|
+
+	
+
+

@@ -1,0 +1,23 @@
+@@ Symbolic Terse Dao
+@@ Prints out "Hi!" and probably also a null char?
+@@ Tape ver.
+5$
+[
+	[
+		[
+			[[]!]/[[]]			@@ H
+		]
+		/
+		[
+			[[]!/[]]/[[]/[]!]	@@ i
+		]
+	]
+	/
+	(
+		(
+			(/[])/(/[]!)		@@ !
+		)
+	)
+]
+:
+@@ 2+54 bytes
