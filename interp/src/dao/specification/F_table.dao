@@ -1,0 +1,37 @@
+| TABLE |
+
+|NUM	SYM	NAME	MAKE		ISWAP	POLAR	HEX
+
+0000 	.	IDLES	$[]!S		Y				0
+0001	!	SWAPS	[[]!]!						1
+0010	/	LATER	[[]]!						2
+0011	])	MERGE	[]!							3
+0100	%	SIFTS	[[]!]						4
+0101	#	EXECS	[[]!/[]!]	Y				5
+0110	>	DELEV	[[]!/[]]					6
+0111	=	EQUAL	[/[]!]!						7
+1000	(	HALVE	[[]!]				Y		8			)
+1001	<	UPLEV	[[]/[]!]					9
+1010	:	READS	[[]/[]]		Y		Y		A
+1011	S	DEALC	[/[]]!          			B
+1100	[	SPLIT	[]					Y		C			]
+1101	*	POLAR	[/[]!]          			D
+1110	$	DOALC	[/[]]				Y		E
+1111	;	INPUT	$[]S		Y				F
+
+| SWAPS |
+
+IDLES <
+READS <
+
+MERGE	SPLIT
+DEALC	DOALC
+
+HALVE	LATER
+SWAPS	SIFTS
+
+DELEV	UPLEV
+EXECS <
+POLAR	EQUAL
+INPUT <
+

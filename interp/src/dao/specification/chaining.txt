@@ -1,0 +1,16 @@
+
+
+b(x,y) builds the X NAND Y
+	length: `
+	
+c makes the first location, which SHOULD HOUSE b(x,y)Xb(x,y)Y into b(X,Y)#
+c
+	`X`Y.. -> b(X,Y)...
+	2` + 2 ->....?
+	
+new fundamental symbol: SIFTS
+	linearly swaps all IDLES to the right.
+	
+EXECS function different:
+
+	execute data as program linearly until we run over or program terminates through S, for which (the latter) we replace EXECS with whatever else

@@ -22,10 +22,10 @@
 
 @@ This Dao is Former heaven - 10 order, LR selection.
 
-@@ DOALC - doubles memory available and doubles selection // increments depth
+@@ DOALC - doubles memory available and doubles selection / depth++
 $
 
-@@ DEALC - halves memory and selection available // decrements depth
+@@ DEALC - halves memory and selection available / depth--
 S
 
 @@ SPLIT - sets first half of selection to 1, second half to 0, splits selection
@@ -46,6 +46,9 @@ S
 @@ IDLES - does nothing
 .
 
+@@ SIFTS - sifts every IDLES to the right. linear.
+%
+
 |
 |	Edge cases:
 |
@@ -54,6 +57,9 @@ S
 |			SPLIT descends datasel and acts
 |			HALVE descends datasel
 |			SWAPS idles
+|
+|		later runs away
+|			idles???
 |
 |		universal selection:			
 |			MERGE ascends datasel
@@ -64,10 +70,10 @@ S
 |	Flow
 |
 
-@@ POLAR - if selection is polar, perform next operation. else, skip.
+@@ POLAR - perform next if selection is polar
 *
 
-@@ EQUAL - if selection is equal, perform next operation. else, skip.
+@@ EQUAL - perform next if selection is equal
 =
 
 @@ UPLEV -	start program over on higher level
@@ -76,7 +82,7 @@ S
 @@ DELEV -	drop level without restarting pointer
 >
 
-@@ EXECS - 	executes selection as nybble code, transforms the data pointer into an owned instruction pointer if data pointer.
+@@ EXECS - 	executes selection as code (see table, numeric symbols), transforms the data pointer into an owned instruction pointer if data pointer.
 #
 
 @@ FORKS -	evaluate selection to two bits (LR) - determines execution pattern of internals.
@@ -103,11 +109,11 @@ S
 |			  #   -> INSTR ->			instructionify
 |			  #   -> INSTR -> DATAP		initialize data for new instructions
 |			  #   ->   X   -> DATAP		perform selection as instruction
-| 		   	When executing the selection would result in termination,
-|			  #   ->   S   ->   b		DEALC when only one bit left ( # calls S on single bit memory )
-|			  #	  ->  bbBB ->	b		terminating instruction is replaced. (B = ~b)
+| 		   	When executing the selection would result in termination...
+|	(e.g.) 	  #   ->   S   ->   b		DEALC terminates the program on single bit
+|			  #	  ->  bbBB ->	b		terminating instruction is replaced. (B = !b)
 |			  #	  ->  DATA -X			becomes data pointer
-|			  #	  ->  DATA 				good
+|			  #	  ->  DATA 				finishes
 
 | FORKS |
 |			bit eval to AB
@@ -127,3 +133,4 @@ S
 	
 
 
+v
