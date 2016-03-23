@@ -25,17 +25,12 @@
 #define DOALC 0xE
 #define INPUT 0xF
 
-#define NEWLINE (char)0x0D
-
 #define exit(x) return x;
-
-/*
-*/
 
 typedef FILE* File;
 typedef int boolean;
 typedef struct PATH* Path;
-typedef char const* String;
+typedef char* String;
 
 void compile(File, File);
 void run(File);
@@ -46,6 +41,7 @@ void halve(Path); void uplev(Path); void reads(Path); void dealc(Path);
 void split(Path); void polar(Path); void doalc(Path); void input(Path);
 
 unsigned char getNybble(char);
+char getChar(unsigned char);
 unsigned long mask(int);
 unsigned long report_by_bit_index(Path, unsigned int, unsigned int);
 
@@ -56,6 +52,8 @@ void write_by_bit_index(Path, unsigned int, unsigned int, unsigned long);
 char*			bin(unsigned long);
 char*			itoa(unsigned long, unsigned char, unsigned char);
 void			bin_print(Path);
+
+void todo();
 
 boolean aligned(Path);
 
@@ -79,66 +77,164 @@ const struct PATH NEW_PATH =
 	{0}, 1, 0, 1, 1, 0
 };
 
-#define switch_by_char(c,f,x) scan_by_char(c, f, switch((char)c) {x})
 #define scan_by_char(c,f,x) while((c = fgetc(f)) != EOF) {x}
 
 #define wheel(k, n, x) if (++k == n) {k = 0; x}
 
-int main(int argc, char const *argv[])
+static char VERBOSE = 0;
+static char HURRY = 0;
+static char FORCE = 0;
+
+int main(int argc, char * const argv[])
 {
 
-	String inputFileName = "hi2.wuwei";
-
-	File inputFile = fopen(inputFileName,"r");
-	File outputFile;
-
-	if (inputFile == NULL)
+	if (argc < 2)
 	{
-		printf("Critical existence failure!\n");
-		fclose(inputFile);
-		exit(1);
+		
+		printf("\t\t#################################\n");
+		printf("\t\t##############     ##############\n");
+		printf("\t\t#########     #####     #########\n");
+		printf("\t\t######   ###############   ######\n");
+		printf("\t\t####   ###################   ####\n");
+		printf("\t\t###  #######################  ###\n");
+		printf("\t\t##  #####   ########====#####  ##\n");
+		printf("\t\t#  #####     #####==    ===###  #\n");
+		printf("\t\t# =#####     ####=         ==## #\n");
+		printf("\t\t#+ =#####   ####=    +++     =# #\n");
+		printf("\t\t#+  ==#########=    +++++     =+#\n");
+		printf("\t\t#++   ===####==     +++++     ++#\n");
+		printf("\t\t##++     ====        +++     ++##\n");
+		printf("\t\t###++                       ++###\n");
+		printf("\t\t####+++                   +++####\n");
+		printf("\t\t######+++               +++######\n");
+		printf("\t\t#########+++++     +++++#########\n");
+		printf("\t\t##############+++++##############\n");
+		printf("\t\t#################################\n");
+		printf("\t\t###===========================###\n");
+		printf("\t\t##|      D      A      O      |##\n");
+		printf("\t\t###===========================###\n");
+		printf("\t\t#################################\n");
+
+
+
+		printf("\r\n[Welcome to DAOLANGUAGE UTILITY ver 0.0.0.1]\n");
+		printf("\tPlease remember to enter a filename as a parameter, for example:\n\n");
+		printf("\t\"> dao hello_world.dao\"\n");
+		printf("\t\tto compile, or...\n\n");
+		printf("\t\"> dao hello_world.wuwei\"\n");
+		printf("\t\tto execute.\n");
+		printf("\n");
+		printf("Options:\n");
+		printf("\t-v   :   Enable Verbose Execution (For Debugging)\n");
+		printf("\t-h   :   Run Immediately After Compiling\n");
+		printf("\t-f   :   Force Execution of Any File as DAOLANGUAGE (DANGEROUS)\n");
+		printf("\n");
+		printf("This implementation is not yet complete. Please wait kindly.\n\n");
+		return(0);
 	}
-	else 
+	else
 	{
-		if (~strcmp(FILE_SYMBOLIC, &inputFileName[strlen(inputFileName)-4]))
-		{
-			printf("%s\n", "Compiling symbolic dao...");
+		String inputFileName = argv[1];
+		File inputFile = fopen(inputFileName,"rb");
+		
+		int c;
+		opterr = 0;
+  		while ((c = getopt(argc, argv, "vhf")) != -1)
+    		switch (c)
+      		{
+      		case 'v':
+        		VERBOSE = 1;
+        		break;
+        	case 'h':
+        		HURRY = 1;
+        		break;
+        	case 'f':
+        		FORCE = 1;
+        		break;
+        	case '?':
+        		printf("Unknown option -%c.\n\n", optopt);
+        		break;
+      		}
 
-			outputFile = fopen("hi2.wuwei","w+");
-			compile(inputFile, outputFile);
+
+
+		if (inputFile == NULL)
+		{
+			printf("Could not find \"%s\" - is it in this directory?\n", inputFileName);
 			fclose(inputFile);
-			fclose(outputFile);
+			exit(1);
 		}
-		if (~strcmp(FILE_COMPILED, &inputFileName[strlen(inputFileName)-6]))
+		else 
 		{
-			int c;
-			int i = 0;
-			int shift = 0;
-			int j = 0;
-			int k = 0;
-			
-			struct PATH newPath = NEW_PATH;
-			Path dao = &newPath;
-
-			printf("%s%s.\nLoading data:\n", "Running ", inputFileName);
-
-			scan_by_char(c, inputFile,
-				(dao -> prg_data)[i] |= ((long)c << ((3 - shift) * 8));
-				wheel(shift, 4, i++;)
-			)
-
-			while (j < (i + ((shift + 3) / 4)))
+			if (~strcmp(FILE_SYMBOLIC, &inputFileName[strlen(inputFileName)-4]))
 			{
-				printf("%x   ", (dao -> prg_data)[j++]);
-				wheel(k, 8, printf("\n");)
+				File outputFile;
+
+				inputFileName[strlen(inputFileName)-4] = 0;
+				inputFileName = strncat(inputFileName, FILE_COMPILED, sizeof(FILE_COMPILED));
+				outputFile = fopen(inputFileName,"w+");
+
+				printf("\n%s%s\n", "Compiling symbolic dao to ", inputFileName);
+				compile(inputFile, outputFile);
+				printf("Finished compiling.");
+
+				fclose(inputFile);
+				fclose(outputFile);
+
+				if (HURRY)
+				{
+					inputFile = fopen(inputFileName,"rb");
+					printf("\n\n");
+					printf("\t=====================\n");
+					printf("\t|Beginning Execution|\n");
+					printf("\t=====================\n\n");
+				}
+				else
+				{
+					return 0;
+				}
 			}
-
-			printf("(%d bytes)\n\n", 4 * j);
-
-			while ((dao -> prg_allocbits) / 32 < j)
-				(dao -> prg_allocbits) *= 2;
-
-			execs(dao);
+			if (FORCE || ~strcmp(FILE_COMPILED, &inputFileName[strlen(inputFileName)-6]))
+			{
+				int c;
+				int i = 0;
+				int shift = 0;
+				int j = 0;
+				int k = 0;
+				
+				struct PATH newPath = NEW_PATH;
+				Path dao = &newPath;
+	
+				printf("%s%s.\nLoading data:\n", "Running ", inputFileName);
+	
+				scan_by_char(c, inputFile,
+					(dao -> prg_data)[i] |= ((unsigned long)c << ((3 - shift) * 8));
+					wheel(shift, 4, i++;)
+				)
+				if (feof(inputFile))
+				{
+  					if (VERBOSE) printf("Hit end of file at position %x.\n\n", i*4 + shift);
+				}
+				else
+				{
+  					printf("Mysterious read error!\n");
+  					return(22);
+				}
+	
+				while (j < (i + ((shift + 3) / 4)))
+				{
+					printf("%x   ", (dao -> prg_data)[j++]);
+					wheel(k, 7, printf("\n");)
+				}
+	
+				printf("(%d bytes)\n\n", 4 * j);
+	
+				while ((dao -> prg_allocbits) / 32 < j)
+					(dao -> prg_allocbits) *= 2;
+	
+				execs(dao);
+				printf("\n");
+			}
 		}
 	}
 
@@ -154,30 +250,35 @@ void compile(File input, File output)
 	unsigned char isComment = 0;
 
 	int ch;
-	switch_by_char
-	(ch, input,
-   			case '@': 		isComment = 1; 		break; 
-   			case NEWLINE: 	isComment = 0; 		break;
-			case '\t':							break;
+	scan_by_char(ch, input,
+		switch((char)ch)
+		{
+		case '\t':			case ' ':			break;
+   		case '@': 			isComment = 1; 		break; 
+   		case (char)0x0D:
+   		case (char)0x0A: 	isComment = 0; 		break;
 
-			default:
-				if (!isComment)
-				{
+		default:
+			if (!isComment)
+			{
+				if (VERBOSE)
 					printf("%c", (char)ch);
-					if (!emptyBuffer)
-					{
-						toWrite |= getNybble((char)ch);
-						fputc(toWrite, output);
-						emptyBuffer = 1;
+				if (!emptyBuffer)
+				{
+					toWrite |= getNybble((char)ch);
+					fputc(toWrite, output);
+					emptyBuffer = 1;
+					if (VERBOSE)
 						printf(" %x\n", toWrite);
-					}
-					else
-					{
-						toWrite = (char)(getNybble((char)ch) << 4);
-						emptyBuffer = 0;
-					}
 				}
-				break;
+				else
+				{
+					toWrite = (char)(getNybble((char)ch) << 4);
+					emptyBuffer = 0;
+				}
+			}
+			break;
+		}
 	)
 	if (!emptyBuffer) {
 		fputc(toWrite, output);
@@ -202,6 +303,18 @@ unsigned char getNybble(char ch)
 		case '(': return HALVE;	case '<': return UPLEV;	case ':': return READS; case 'S': return DEALC;	
 		case '[': return SPLIT;	case '*': return POLAR;	case '$': return DOALC;	case ';': return INPUT;
 		default: return IDLES;
+	}
+}
+
+char getChar(unsigned char ch)
+{
+   switch (ch) 
+   {
+		case IDLES: return '.';	case SWAPS: return '!';	case LATER: return '/'; case MERGE: return ')';
+		case SIFTS: return '%';	case EXECS: return '#';	case DELEV: return '>';	case EQUAL: return '=';
+		case HALVE: return '(';	case UPLEV: return '<';	case READS: return ':'; case DEALC: return 'S';
+		case SPLIT: return '[';	case POLAR: return '*';	case DOALC: return '$';	case INPUT: return ';';
+		default: return '?';
 	}
 }
 
@@ -247,8 +360,6 @@ char* itoa(unsigned long val, unsigned char len, unsigned char radix)
 /*████████║      D      A      O      ║████████*/
 /*████████╬═══════════════════════════╬████████*/
 /*█████████████████████████████████████████████*/
-
-#define VERBOSE 0
 
 #define CELL 32
 
@@ -325,6 +436,7 @@ void merge(Path path)
 	}
 	else
 	{
+		todo();
 		/* Move pointer into parent data */
 		/*
 			████████╗ ██████╗ ██████╗  ██████╗ 
@@ -391,7 +503,7 @@ void execs(Path path)
 		if (VERBOSE)
 		{
 			printf("%s ", itoa(P_PIND, 5, 16));
-			printf("%x ", command);
+			printf("%c ", getChar(command));
 			bin_print(P_CHILD);
 			printf(" : ");
 		}
@@ -437,6 +549,7 @@ void execs(Path path)
 		}
 
 	}
+	printf("(Some functionality not yet implemented)");
 	/* Then do the weird thing about replacing the finished EXECS with something else
 			████████╗ ██████╗ ██████╗  ██████╗ 
 			╚══██╔══╝██╔═══██╗██╔══██╗██╔═══██╗
@@ -470,6 +583,7 @@ void halve(Path path)
 		(P_LEN) /= 2;
 	else
 	{
+		todo();
 		/* into owned path */
 		/*
 			████████╗ ██████╗ ██████╗  ██████╗ 
@@ -522,6 +636,7 @@ void dealc(Path path)
 	}
 	else
 	{
+		todo();
 		/* terminate program */
 		/*
 			████████╗ ██████╗ ██████╗  ██████╗ 
@@ -546,6 +661,7 @@ void split(Path path)
 
 	if (len == 1)
 	{
+		todo();
 		/* DESCEND INTO LOWER FLOOR */
 		/*
 			████████╗ ██████╗ ██████╗  ██████╗ 
@@ -600,6 +716,7 @@ void doalc(Path path)
 	}
 	else
 	{
+		todo();
 		/* error! */
 		/*
 			████████╗ ██████╗ ██████╗  ██████╗ 
@@ -614,6 +731,7 @@ void doalc(Path path)
 
 void input(Path path)
 {
+	todo();
 	/* ??? */
 	/*
 			████████╗ ██████╗ ██████╗  ██████╗ 
@@ -678,4 +796,10 @@ void bin_print(Path path)
 		for (; i < (P_ALC / CELL); i++)
 			printf("%s", bin(P_DATA[i]));
 	}
+}
+
+void todo()
+{
+	printf("!!! NOT IMPLEMENTED YET !!!\n");
+	return;
 }
