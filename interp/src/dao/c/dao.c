@@ -174,9 +174,11 @@ int main(int argc, char * const argv[])
 				inputFileName = strncat(inputFileName, FILE_COMPILED, sizeof(FILE_COMPILED));
 				outputFile = fopen(inputFileName,"w+");
 
-				printf("\n%s%s\n", "Compiling symbolic dao to ", inputFileName);
+				if (VERBOSE)
+					printf("\n%s%s\n", "Compiling symbolic dao to ", inputFileName);
 				compile(inputFile, outputFile);
-				printf("Finished compiling.");
+				if (VERBOSE)
+					printf("Finished compiling.");
 
 				fclose(inputFile);
 				fclose(outputFile);
@@ -184,10 +186,13 @@ int main(int argc, char * const argv[])
 				if (HURRY)
 				{
 					inputFile = fopen(inputFileName,"rb");
-					printf("\n\n");
-					printf("\t=====================\n");
-					printf("\t|Beginning Execution|\n");
-					printf("\t=====================\n\n");
+					if (VERBOSE)
+					{
+						printf("\n\n");
+						printf("\t=====================\n");
+						printf("\t|Beginning Execution|\n");
+						printf("\t=====================\n\n");
+					}
 				}
 				else
 				{
@@ -205,7 +210,8 @@ int main(int argc, char * const argv[])
 				struct PATH newPath = NEW_PATH;
 				Path dao = &newPath;
 	
-				printf("%s%s.\nLoading data:\n", "Running ", inputFileName);
+				if (VERBOSE)
+					printf("%s%s.\nLoading data:\n", "Running ", inputFileName);
 	
 				scan_by_char(c, inputFile,
 					(dao -> prg_data)[i] |= ((unsigned long)c << ((3 - shift) * 8));
@@ -217,23 +223,28 @@ int main(int argc, char * const argv[])
 				}
 				else
 				{
-  					printf("Mysterious read error!\n");
+  					printf("Encountered an error during file read.\n");
   					return(22);
 				}
 	
 				while (j < (i + ((shift + 3) / 4)))
 				{
-					printf("%x   ", (dao -> prg_data)[j++]);
-					wheel(k, 7, printf("\n");)
+					if (VERBOSE)
+					{
+						printf("%x   ", (dao -> prg_data)[j]);
+						wheel(k, 7, printf("\n");)
+					}
+					j++;
 				}
-	
-				printf("(%d bytes)\n\n", 4 * j);
+				if (VERBOSE)
+					printf("(%d bytes)\n\n", 4 * j);
+				
+				
 	
 				while ((dao -> prg_allocbits) / 32 < j)
 					(dao -> prg_allocbits) *= 2;
 	
 				execs(dao);
-				printf("\n");
 			}
 		}
 	}
@@ -346,7 +357,7 @@ char* itoa(unsigned long val, unsigned char len, unsigned char radix)
 /*████████  █████   ████████▒▒▒▒█████  ████████*/
 /*███████  █████     █████▒▒░░░░▒▒▒███  ███████*/
 /*███████ ▒█████     ████▒░░░░░░░░░▒▒██ ███████*/
-/*███████▓░▒█████   ████▒░░░░▓▓▓░░░░░▒█ ███████*/
+/*███████▓░▒█████   ████▒░░░░▓▓▓░░░░░▒█ ███████ yet to do: level stuff, ascend and descend, execs replacement */
 /*███████▓░░▒▒█████████▒░░░░▓▓▓▓▓░░░░░▒▓███████*/
 /*███████▓▓░░░▒▒▒████▒▒░░░░░▓▓▓▓▓░░░░░▓▓███████*/
 /*████████▓▓░░░░░▒▒▒▒░░░░░░░░▓▓▓░░░░░▓▓████████*/
@@ -549,7 +560,8 @@ void execs(Path path)
 		}
 
 	}
-	printf("(Some functionality not yet implemented)");
+	if (VERBOSE)
+		printf("(Some functionality not yet implemented)");
 	/* Then do the weird thing about replacing the finished EXECS with something else
 			████████╗ ██████╗ ██████╗  ██████╗ 
 			╚══██╔══╝██╔═══██╗██╔══██╗██╔═══██╗
