@@ -1,0 +1,43 @@
+@ Will not traverse unless numeric
+@ num digits: 0x30 thru 0x39
+@ 0011 0000 0
+@ 0011 0001 1
+@ 0011 0010 2 
+@ 0011 0011 3
+@ 0011 0100 4
+@ 0011 0101 5
+@ 0011 0110 6
+@ 0011 0111 7
+@ 0011 1000 8
+@ 0011 1001 9
+
+@ 0011 1010 :
+@ 0011 1011 ;
+@ 0011 1100 <
+@ 0011 1101 =
+@ 0011 1110 >
+@ 0011 1111 ?
+
+
+
+@ Initialize
+$$$>
+@ Input
+;
+@ Examine first portion
+(
+	@ Remove 1..0 0..0 1..1. Ensures 0..1
+	*<=<
+	@ Enter first two bits.
+	(
+		@ Remove 01.. Ensures 00..
+		!*<!
+		@ Next two bits
+		/
+		@ Remove ..10 Ensures ..11
+		*<
+	@ Exit first portion. 0011 Ensured.
+	)
+@ Next
+/
+@ 

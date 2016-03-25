@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define MAX_BIT_SIZE (unsigned long)(1 << 17)
+#define MAX_BIT_SIZE (unsigned long)(1 << 14)
 
 #define FILE_SYMBOLIC ".dao"
 #define FILE_COMPILED ".wuwei"
@@ -25,19 +25,23 @@
 #define DOALC 0xE
 #define INPUT 0xF
 
+typedef FILE* File;
 typedef struct PATH* Path;
 typedef char* String;
 
-void compile(FILE*, FILE*);
+void compile(File, File);
 void idles(Path); void swaps(Path); void later(Path); void merge(Path);
-void sifts(Path); void execs(Path, Path); void delev(Path); void equal(Path);
-void halve(Path); void uplev(Path); void reads(Path); void dealc(Path);
-void split(Path); void polar(Path); void doalc(Path); void input(Path);
+void sifts(Path); void execs(Path, Path); 
+void delev(Path); void equal(Path); void halve(Path); void uplev(Path);
+void reads(Path); void dealc(Path); void split(Path); void polar(Path);
+void doalc(Path); void input(Path);
 
-char getChar(unsigned char);
 unsigned char getNybble(char);
+char getChar(unsigned char);
 unsigned long mask(int);
 unsigned long report_by_bit_index(Path, unsigned int, unsigned int);
+
+unsigned long* report_tot(Path);
 
 void write_by_bit_index(Path, unsigned int, unsigned int, unsigned long);
 
@@ -70,8 +74,6 @@ const struct PATH NEW_PATH =
 
 #define scan_by_char(c,f,x) while((c = fgetc(f)) != EOF) {x}
 #define wheel(k, n, x) if (++k == n) {k = 0; x}
-#define verp(x) verx{printf(x);}
-#define verx if (VERBOSE)
 
 static char VERBOSE = 0;
 static char HURRY = 0;
@@ -122,7 +124,7 @@ int main(int argc, char * const argv[])
 	else
 	{
 		String inputFileName = argv[1];
-		FILE* inputFile = fopen(inputFileName,"rb");
+		File inputFile = fopen(inputFileName,"rb");
 		int c;
 		opterr = 0;
   		while ((c = getopt(argc, argv, "vhf")) != -1)
@@ -144,13 +146,15 @@ int main(int argc, char * const argv[])
 		}
 		if (~strcmp(FILE_SYMBOLIC, &inputFileName[strlen(inputFileName)-4]))
 		{
-			FILE* outputFile;
+			File outputFile;
 			inputFileName[strlen(inputFileName)-4] = 0;
 			inputFileName = strncat(inputFileName, FILE_COMPILED, sizeof(FILE_COMPILED));
 			outputFile = fopen(inputFileName,"w+");
-			verx printf("\n%s%s\n", "Compiling symbolic dao to ", inputFileName);
+			if (VERBOSE)
+				printf("\n%s%s\n", "Compiling symbolic dao to ", inputFileName);
 			compile(inputFile, outputFile);
-			verp("Finished compiling.");
+			if (VERBOSE)
+				printf("Finished compiling.");
 			fclose(inputFile);
 			fclose(outputFile);
 			if (HURRY)
@@ -164,7 +168,9 @@ int main(int argc, char * const argv[])
 				}
 			}
 			else
+			{
 				return 0;
+			}
 		}
 		if (FORCE || ~strcmp(FILE_COMPILED, &inputFileName[strlen(inputFileName)-6]))
 		{
@@ -210,7 +216,7 @@ int main(int argc, char * const argv[])
 	return 0;
 }
 
-void compile(FILE* input, FILE* output)
+void compile(File input, File output)
 {
 	unsigned char emptyBuffer = 1;
 	unsigned char toWrite = 0;
@@ -317,9 +323,9 @@ char* itoa(unsigned long val, unsigned char len, unsigned char radix)
 
 #define CELL 32
 
-#define levlim(l)		if ((PR_LEV) >= l) {if(VERBOSE)printf("LEV_SKIP");return;}
-#define levconsk(l,x)	if ((PR_LEV) < l) {x}
-#define levcons(l,x,y)	if ((PR_LEV) < l) {x} else {y}
+#define levlim(l)		if ((P_RUNNING -> prg_level) >= l) {if(VERBOSE)printf("LEV_SKIP");return;}
+#define levconsk(l,x)	if ((P_RUNNING -> prg_level) < l) {x}
+#define levcons(l,x,y)	if ((P_RUNNING -> prg_level) < l) {x} else {y}
 
 #define intIndex 		( P_IND % CELL )
 #define arrIndex 		( P_IND / CELL )
@@ -335,8 +341,6 @@ char* itoa(unsigned long val, unsigned char len, unsigned char radix)
 #define P_OWNER			(path -> owner)
 #define P_CHILD			(path -> child)
 
-#define PR_LEV 			(P_RUNNING -> prg_level)
-
 static Path P_WRITTEN;
 static unsigned int floor = 0;
 
@@ -347,7 +351,16 @@ void swaps(Path path)
 	levlim(2)
 	if (VERBOSE)
 		printf("Swapped length %d.", P_LEN);
-	if (P_LEN == 1)	return;
+	/*
+	 Get selection position
+	 Get selection left
+	 Get selection right
+	 Write selection left to right
+	 Write selection right to left
+	*/
+	if (P_LEN == 1)
+	 	return;
+
 	if (P_LEN <= CELL)
 	{
 		int len = P_LEN;
@@ -377,7 +390,7 @@ void swaps(Path path)
 
 void later(Path path)
 {
-	if (aligned(path) || (PR_LEV >= 4))
+	if (aligned(path) || ((P_RUNNING -> prg_level) >= 4))
 		P_IND += P_LEN;
 	else
 		merge(path);
@@ -401,6 +414,15 @@ void merge(Path path)
 
 void sifts(Path path)
 {
+	/*
+	// Get current index
+	// LOOP Linear nybble
+		// If pos IDLES call this position L
+		// Keep going until read non-idles. Call pos R.
+		// LOOP Linear nybble as long as L still IDLES and R in bounds and not IDLES
+			// Write R to L
+			// Write IDLES to R
+		*/
 	int l = P_IND;
 	levlim(5)
 	while (l + 4 < P_ALC)
@@ -426,14 +448,16 @@ static int doloop = 1;
 void execs(Path path, Path caller)
 {
 	unsigned long tempNum1 = 0;
-	if (P_LEV >= 8) 
+	unsigned long tempNum2 = 0;
+	if ((path -> prg_level) >= 8) 
 	{
 		if (VERBOSE)
-			printf("LEV_SKIP");
+			printf(" LEV_SKIP");
 		return;
 	}
 	floor++;
 	P_RUNNING = path;
+	/* Probably also do the other cases...? Nah, not yet. Nibble execs is good 'nuff.*/
 	if (P_CHILD == NULL)
 		P_CHILD = (malloc(sizeof(struct PATH)));
 	if (P_CHILD == NULL)
@@ -442,8 +466,8 @@ void execs(Path path, Path caller)
 		return;
 	}
 
-	verx
-		printf("Allocated %d bytes.\n\n", sizeof(*P_CHILD));
+	if (VERBOSE)
+		printf("Allocated %d bytes to program.\n", sizeof(*P_CHILD));
 
 	memcpy(P_CHILD, &NEW_PATH, sizeof(struct PATH));
 	(*(*path).child).owner = path;
@@ -453,12 +477,28 @@ void execs(Path path, Path caller)
 	/* Execs Loop */
 	for (; doloop && P_PIND < (P_ALC / 4); P_PIND++)
 	{
+		/* Bug zone */
+		if (VERBOSE)
+			printf("[%x] ", P_RUNNING);
+		
 		tempNum1 = (P_RUNNING -> prg_index);
-		command = ((P_RUNNING -> prg_data)[(tempNum1*4) / 32] >> (32 - ((tempNum1*4) % 32) - 4)) & mask(4);
+		tempNum2 = (P_RUNNING -> prg_data)[(tempNum1*4) / 32];
+		command = (tempNum2 >> (32 - ((tempNum1*4) % 32) - 4)) & mask(4);
+/*
+		command = report_by_bit_index((*P_RUNNING), tempNum1 * 4, 4);
+		command = report_by_bit_index((*P_RUNNING), ((*P_RUNNING) -> prg_index) * 4, 4);
+		command = (((((*P_RUNNING)) -> prg_data)[P_PIND / 8] >> (32 - (P_PIND % 8) - 4)) & mask(4));
+		((*P_RUNNING)[i / 32] >> (32 - (tempNum1 % 8) - 4)) & mask(4);
+*/
 
-		verx
+		/* Bug zone */
+
+
+		if (VERBOSE)
 		{
-			printf("%s F%x L%d %c ", itoa(P_PIND, 5, 16), floor, PR_LEV, getChar(command));
+			printf("%s ", itoa(P_PIND, 5, 16));
+			printf("F%x L%d ", floor, P_RUNNING -> prg_level);
+			printf("%c ", getChar(command));
 			bin_print(P_WRITTEN);
 			printf(" : ");
 		}
@@ -486,7 +526,8 @@ void execs(Path path, Path caller)
 		if (P_WRITTEN -> sel_index > 200)
 			printf("[%d]", P_WRITTEN -> sel_index);
 
-		verp("\n");
+		if (VERBOSE)
+			printf("\n");
 	}
 
 	doloop = 1;
@@ -502,15 +543,19 @@ void execs(Path path, Path caller)
 
 void delev(Path path)
 {
-	if (PR_LEV > 0)
-		PR_LEV--;
+	if ((P_RUNNING -> prg_level) > 0)
+		(P_RUNNING -> prg_level)--;
 }
 
 void equal(Path path)
 {
 	levlim(5)
+	/* If leftmost and rightmost of selection are not equal then skip data pointer */
 	if (report_by_bit_index(path, P_IND, 1) ^ report_by_bit_index(path, P_IND + P_LEN - 1, 1))
+	{
+		if (P_RUNNING != NULL)
 			skip();
+	}
 	else
 		if (VERBOSE)
 			printf("EQUAL");
@@ -528,30 +573,33 @@ void halve(Path path)
 		}
 		return;
 	}
-	P_LEN /= 2;
+
+	(P_LEN) /= 2;
 }
 
 void uplev(Path path)
 {
-	levlim(9)
-	PR_LEV++;
+	levcons(9, (P_RUNNING -> prg_level)++;, (P_RUNNING -> prg_level)--;)
 	(P_RUNNING -> prg_index) = 0;
 }
 
 void reads(Path path)
 {
 	levlim(6)
-	if (P_LEN < 8)
+	if (P_LEN == 8 || P_LEN == 16)
+		putchar(report_by_bit_index(path, P_IND, P_LEN));
+	else if (P_LEN == 32)
+		printf("%c%c", report_by_bit_index(path, P_IND, 16), report_by_bit_index(path, P_IND + 16, 16));
+	else if (P_LEN <= CELL)
 	{
 		String out = bin(report_by_bit_index(path, P_IND, P_LEN));
 		printf("%s", &out[strlen(out) - P_LEN]);
-		return;
 	}
 	else
 	{
 		long pos = P_IND;
-		for (; pos < (P_IND + P_LEN); pos += 8)
-			putchar(report_by_bit_index(path, pos, 8));
+		for (; pos < (P_IND + P_LEN); pos += 16)
+			putchar(report_by_bit_index(path, pos, 16));
 	}
 } 
 
@@ -560,18 +608,27 @@ void dealc(Path path)
 	levlim(2)
 	if (P_ALC == 1)
 	{
-		int report = report_by_bit_index(path, 0, 1);
+		unsigned char report = report_by_bit_index(path, 0, 1);
 		if ((P_RUNNING -> owner) != NULL)
 		{
 			unsigned long ownind = ((P_RUNNING -> owner) -> prg_index);
-			verx
+			if (VERBOSE)
+			{
 				printf("Terminating program from position %x with value %x",\
 					ownind, report);
-			write_by_bit_index(P_RUNNING -> owner, (ownind) * 4, 4, report);
+			}
+			
+			/* Terminate - overwrite the EXECS in the P_RUNNING */
+			if (report)
+				write_by_bit_index(P_RUNNING -> owner, (ownind) * 4, 4, SWAPS);
+			else
+				write_by_bit_index(P_RUNNING -> owner, (ownind) * 4, 4, IDLES);
 		}
+		/* Kick out of caller */
 		doloop = 0;
 		return;
 	}
+	/* Halve prg_alloc and sel_len, or terminate */
 	P_ALC >>= 1;
 	halve(path);
 	if ((P_IND + P_LEN) > P_ALC)
@@ -580,9 +637,16 @@ void dealc(Path path)
 
 void split(Path path)
 {
-	if (PR_LEV < 1)
+	/*
+		Get selection
+		Selection left  |= MASK(LEN/2)
+		Selection right &= MASK(LEN/2)
+		Halve
+	*/
+	if ((P_RUNNING -> prg_level) < 1)
 	{
 		unsigned int len = P_LEN;
+	
 		if (len == 1)
 		{
 			if (P_CHILD != NULL)
@@ -594,6 +658,7 @@ void split(Path path)
 			}
 			return;
 		}
+		
 		if (len <= CELL)
 		{
 			unsigned int shift = CELL - intIndex - len;
@@ -613,20 +678,27 @@ void split(Path path)
 		}
 	}
 	halve(path);
+		
 }
 
 void polar(Path path)
 {
 	levlim(3)
+	/* If leftmost and rightmost of selection are polar then don't skip data pointer */
 	if (!(report_by_bit_index(path, P_IND, 1) && !report_by_bit_index(path, P_IND + P_LEN - 1, 1)))
-		skip();
+	{
+		if (P_RUNNING != NULL)
+			skip();
+	}
 	else
-		verp("POLAR");
+		if (VERBOSE)
+			printf("POLAR");
 }
 
 void doalc(Path path)
 {
 	levlim(1)
+	/* If it's still below MAX_BIT_SIZE then double length and alloc */
 	if (P_ALC < MAX_BIT_SIZE) {
 		P_ALC <<= 1;
 		merge(path);
@@ -641,19 +713,9 @@ void doalc(Path path)
 void input(Path path)
 {
 	levlim(6)
-	if (P_LEN < 8)
-	{
-		write_by_bit_index(path, P_IND, P_LEN, getchar());
-		return;
-	}
-	else
-	{
-		int i = P_IND;
-		for (; i < P_LEN; i += 8)
-			write_by_bit_index(path, i, 8, getchar());
-	}
-
+	write_by_bit_index(path, P_IND, P_LEN, getchar());
 }
+
 /*▄▄
  ▐███▄
   ▀████▄
@@ -669,6 +731,7 @@ void input(Path path)
                                          ▀████▄	
                                            ▀███▌
                                              ▀▀*/
+
 int aligned(Path path)
 {
 	return P_IND % (P_LEN << 1) == 0;
@@ -676,7 +739,7 @@ int aligned(Path path)
 
 unsigned long mask(int length) 
 {
-	if (length < CELL)	return ((int)1 << length) - 1;
+	if (length < CELL)	return (char)((int)1 << length) - 1;
 	else			 	return 0xFFFFFFFF;
 } 
 
@@ -688,26 +751,30 @@ unsigned long report_by_bit_index(Path path, unsigned int i, unsigned int len)
 void write_by_bit_index(Path path, unsigned int i, unsigned int len, unsigned long write)
 {
 	int shift = CELL - (i % CELL) - len;
+	write &= mask(len);
 	P_DATA[i / CELL] &= ~(mask(len) << shift);
-	P_DATA[i / CELL] |= ((write & mask(len)) << shift);
+	P_DATA[i / CELL] |= (write << shift);
 }
 
 void bin_print(Path path)
 {
-	long i = 0;
 	if (P_ALC <= CELL)
 	{
 		String out = bin(report_by_bit_index(path, 0, P_ALC));
 		printf("%s", &out[strlen(out) - P_ALC]);
-		return;
 	}
-	for (; i < (P_ALC / CELL); i++)
-		printf("%x", P_DATA[i]);
+	else
+	{
+		long i = 0;
+		for (; i < (P_ALC / CELL); i++)
+			/*printf("%s", bin(P_DATA[i]));*/
+			printf("%x", P_DATA[i]);
+	}
 }
 
 void skip()
 {
-	if (P_RUNNING == NULL) return;
-	verp("SKIP");
+	if (VERBOSE)
+		printf("%s ", "SKIP");
 	(P_RUNNING -> prg_index)++;
 }
