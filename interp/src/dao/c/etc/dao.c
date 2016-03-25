@@ -66,6 +66,8 @@ char*			itoa(unsigned long, unsigned char, unsigned char);
 void			bin_print(Path);
 void			skip();
 
+void todo();
+
 boolean aligned(Path);
 
 struct PATH
@@ -96,7 +98,7 @@ static char VERBOSE = 0;
 static char HURRY = 0;
 static char FORCE = 0;
 
-static Path P_RUNNING;
+static Path* P_RUNNING;
 
 int main(int argc, char * const argv[])
 {
@@ -249,11 +251,13 @@ int main(int argc, char * const argv[])
 				}
 				if (VERBOSE)
 					printf("(%d bytes)\n\n", 4 * j);
+				
+				
 	
 				while ((dao -> prg_allocbits) / 32 < j)
 					(dao -> prg_allocbits) *= 2;
 
-				P_RUNNING = dao;
+				P_RUNNING = &dao;
 				
 				execs(dao, NULL);
 			}
@@ -386,9 +390,9 @@ char* itoa(unsigned long val, unsigned char len, unsigned char radix)
 
 #define CELL 32
 
-#define levlim(l)		if ((P_RUNNING -> prg_level) >= l) {if(VERBOSE)printf("LEV_SKIP");return;}
-#define levconsk(l,x)	if ((P_RUNNING -> prg_level) < l) {x}
-#define levcons(l,x,y)	if ((P_RUNNING -> prg_level) < l) {x} else {y}
+#define levlim(l)		if (((*P_RUNNING) -> prg_level) >= l) {if(VERBOSE)printf(" LEV_SKIP");return;}
+#define levconsk(l,x)	if (((*P_RUNNING) -> prg_level) < l) {x}
+#define levcons(l,x,y)	if (((*P_RUNNING) -> prg_level) < l) {x} else {y}
 
 #define intIndex 		( P_IND % CELL )
 #define arrIndex 		( P_IND / CELL )
@@ -404,7 +408,7 @@ char* itoa(unsigned long val, unsigned char len, unsigned char radix)
 #define P_OWNER			(path -> owner)
 #define P_CHILD			(path -> child)
 
-static Path P_WRITTEN;
+static Path* P_WRITTEN;
 static unsigned int floor = 0;
 
 void idles(Path path) {}
@@ -412,8 +416,6 @@ void idles(Path path) {}
 void swaps(Path path)
 {
 	levlim(2)
-	if (VERBOSE)
-		printf("Swapped length %d.", P_LEN);
 	/*
 	 Get selection position
 	 Get selection left
@@ -424,7 +426,7 @@ void swaps(Path path)
 	if (P_LEN == 1)
 	 	return;
 
-	if (P_LEN <= CELL)
+	if (P_LEN < CELL)
 	{
 		int len = P_LEN;
 		int shift = CELL - intIndex - len;
@@ -453,7 +455,7 @@ void swaps(Path path)
 
 void later(Path path)
 {
-	if (aligned(path) || ((P_RUNNING -> prg_level) >= 4))
+	if (aligned(path) || (((*P_RUNNING) -> prg_level) >= 4))
 		P_IND += P_LEN;
 	else
 		merge(path);
@@ -471,7 +473,7 @@ void merge(Path path)
 	else
 	{
 		if (P_OWNER != NULL)
-			P_WRITTEN = P_OWNER;
+			P_WRITTEN = &P_OWNER;
 	}
 }
 
@@ -506,12 +508,12 @@ void sifts(Path path)
 }
 
 static unsigned char command = 0;
-static boolean doloop = 1;
 
 void execs(Path path, Path caller)
 {
 	unsigned long tempNum1 = 0;
 	unsigned long tempNum2 = 0;
+	unsigned long tempNum3 = 0;
 	if ((path -> prg_level) >= 8) 
 	{
 		if (VERBOSE)
@@ -519,7 +521,7 @@ void execs(Path path, Path caller)
 		return;
 	}
 	floor++;
-	P_RUNNING = path;
+	P_RUNNING = &path;
 	/* Probably also do the other cases...? Nah, not yet. Nibble execs is good 'nuff.*/
 	if (P_CHILD == NULL)
 		P_CHILD = (malloc(sizeof(struct PATH)));
@@ -534,18 +536,25 @@ void execs(Path path, Path caller)
 
 	memcpy(P_CHILD, &NEW_PATH, sizeof(struct PATH));
 	(*(*path).child).owner = path;
-	P_WRITTEN = P_CHILD;
+	P_WRITTEN = &P_CHILD;
 	P_PIND = (P_IND / 4);
 
 	/* Execs Loop */
-	for (; doloop && P_PIND < (P_ALC / 4); P_PIND++)
+	for (; P_PIND < (P_ALC / 4); P_PIND++)
 	{
 		/* Bug zone */
 		if (VERBOSE)
-			printf("[%x] ", P_RUNNING);
+		{
+			/*
+			printf("[%x]", command);
+			printf("[%x]", P_RUNNING);
+			printf("[%x]", &P_PIND);
+			*/
+			printf("[%x]", *P_RUNNING);
+		}
 		
-		tempNum1 = (P_RUNNING -> prg_index);
-		tempNum2 = (P_RUNNING -> prg_data)[(tempNum1*4) / 32];
+		tempNum1 = ((*P_RUNNING) -> prg_index);
+		tempNum2 = ((*P_RUNNING) -> prg_data)[(tempNum1*4) / 32];
 		command = (tempNum2 >> (32 - ((tempNum1*4) % 32) - 4)) & mask(4);
 /*
 		command = report_by_bit_index((*P_RUNNING), tempNum1 * 4, 4);
@@ -554,51 +563,52 @@ void execs(Path path, Path caller)
 		((*P_RUNNING)[i / 32] >> (32 - (tempNum1 % 8) - 4)) & mask(4);
 */
 
+		if (VERBOSE)
+			printf("c: %x", command);
 		/* Bug zone */
 
 
 		if (VERBOSE)
 		{
-			printf("%s ", itoa(P_PIND, 5, 16));
-			printf("F%x L%d ", floor, P_RUNNING -> prg_level);
-			printf("%c ", getChar(command));
-			bin_print(P_WRITTEN);
+			printf("[%x] ", *P_RUNNING);
+			if ((int)(*P_RUNNING) == 0)
+				printf("AAAAAAA");
+
+			printf("pind: %s ", itoa(P_PIND, 5, 16));
+			printf("[%x] ", *P_RUNNING);
+
+			printf("F%x L%d ", floor, (*P_RUNNING) -> prg_level);
+			printf("[%x] ", *P_RUNNING);
+			printf("char: %c ", getChar(command));
+			printf("[%x] ", *P_RUNNING);
+			bin_print(P_CHILD);
 			printf(" : ");
 		}
 
 		switch(command)
 		{
-			case IDLES: idles(P_WRITTEN); break;
-			case SWAPS: swaps(P_WRITTEN); break;
-			case LATER: later(P_WRITTEN); break;
-			case MERGE: merge(P_WRITTEN); break;
-			case SIFTS: sifts(P_WRITTEN); break;
-			case EXECS: execs(P_WRITTEN, path); break;
-			case DELEV: delev(P_WRITTEN); break;
-			case EQUAL: equal(P_WRITTEN); break;
-			case HALVE: halve(P_WRITTEN); break;
-			case UPLEV: uplev(P_WRITTEN); break;
-			case READS: reads(P_WRITTEN); break;
-			case DEALC: dealc(P_WRITTEN); break;
-			case SPLIT: split(P_WRITTEN); break;
-			case POLAR: polar(P_WRITTEN); break;
-			case DOALC: doalc(P_WRITTEN); break;
-			case INPUT: input(P_WRITTEN); break;
+			case IDLES: idles(*P_WRITTEN); break;
+			case SWAPS: swaps(*P_WRITTEN); break;
+			case LATER: later(*P_WRITTEN); break;
+			case MERGE: merge(*P_WRITTEN); break;
+			case SIFTS: sifts(*P_WRITTEN); break;
+			case EXECS: execs(*P_WRITTEN, path); break;
+			case DELEV: delev(*P_WRITTEN); break;
+			case EQUAL: equal(*P_WRITTEN); break;
+			case HALVE: halve(*P_WRITTEN); break;
+			case UPLEV: uplev(*P_WRITTEN); break;
+			case READS: reads(*P_WRITTEN); break;
+			case DEALC: dealc(*P_WRITTEN); break;
+			case SPLIT: split(*P_WRITTEN); break;
+			case POLAR: polar(*P_WRITTEN); break;
+			case DOALC: doalc(*P_WRITTEN); break;
+			case INPUT: input(*P_WRITTEN); break;
 		}
-
-		if (P_WRITTEN -> sel_index > 200)
-			printf("[%d]", P_WRITTEN -> sel_index);
-
 		if (VERBOSE)
 			printf("\n");
 	}
 
-	doloop = 1;
-	if (caller != NULL)
-	{
-		P_RUNNING = caller;
-		P_WRITTEN = caller -> child;
-	}
+	P_RUNNING = &caller;
 
 	floor--;
 	return;
@@ -606,8 +616,8 @@ void execs(Path path, Path caller)
 
 void delev(Path path)
 {
-	if ((P_RUNNING -> prg_level) > 0)
-		(P_RUNNING -> prg_level)--;
+	if (((*P_RUNNING) -> prg_level) > 0)
+		((*P_RUNNING) -> prg_level)--;
 }
 
 void equal(Path path)
@@ -631,8 +641,8 @@ void halve(Path path)
 	{
 		if (P_CHILD != NULL)
 		{
-			P_WRITTEN = P_CHILD;
-			(P_WRITTEN -> sel_length) = (P_WRITTEN -> prg_allocbits);
+			P_WRITTEN = &P_CHILD;
+			((*P_WRITTEN) -> sel_length) = ((*P_WRITTEN) -> prg_allocbits);
 		}
 		return;
 	}
@@ -642,8 +652,8 @@ void halve(Path path)
 
 void uplev(Path path)
 {
-	levcons(9, (P_RUNNING -> prg_level)++;, (P_RUNNING -> prg_level)--;)
-	(P_RUNNING -> prg_index) = 0;
+	levcons(9, ((*P_RUNNING) -> prg_level)++;, ((*P_RUNNING) -> prg_level)--;)
+	((*P_RUNNING) -> prg_index) = 0;
 }
 
 void reads(Path path)
@@ -672,29 +682,28 @@ void dealc(Path path)
 	if (P_ALC == 1)
 	{
 		unsigned char report = report_by_bit_index(path, 0, 1);
-		if ((P_RUNNING -> owner) != NULL)
+		if (((*P_RUNNING) -> owner) != NULL)
 		{
-			unsigned long ownind = ((P_RUNNING -> owner) -> prg_index);
+			unsigned long ownind = (((*P_RUNNING) -> owner) -> prg_index);
 			if (VERBOSE)
 			{
 				printf("Terminating program from position %x with value %x",\
 					ownind, report);
 			}
-			
 			/* Terminate - overwrite the EXECS in the P_RUNNING */
 			if (report)
-				write_by_bit_index(P_RUNNING -> owner, (ownind) * 4, 4, SWAPS);
+				write_by_bit_index(*P_RUNNING, ownind, 4, SWAPS);
 			else
-				write_by_bit_index(P_RUNNING -> owner, (ownind) * 4, 4, IDLES);
+				write_by_bit_index(*P_RUNNING, ownind, 4, IDLES);
 		}
 		/* Kick out of caller */
-		doloop = 0;
+		((*P_RUNNING) -> prg_index) = ((*P_RUNNING) -> prg_allocbits) + 1;
 		return;
 	}
 	/* Halve prg_alloc and sel_len, or terminate */
 	P_ALC >>= 1;
 	halve(path);
-	if ((P_IND + P_LEN) > P_ALC)
+	if ((P_IND + P_LEN) >= P_ALC)
 		P_IND -= P_ALC;
 }
 
@@ -706,7 +715,7 @@ void split(Path path)
 		Selection right &= MASK(LEN/2)
 		Halve
 	*/
-	if ((P_RUNNING -> prg_level) < 1)
+	if (((*P_RUNNING) -> prg_level) < 1)
 	{
 		unsigned int len = P_LEN;
 	
@@ -714,10 +723,10 @@ void split(Path path)
 		{
 			if (P_CHILD != NULL)
 			{
-				P_WRITTEN = P_CHILD;
-				(P_WRITTEN -> sel_length) = (P_WRITTEN -> prg_allocbits);
-				split(P_WRITTEN);
-				halve(P_WRITTEN);
+				P_WRITTEN = &P_CHILD;
+				((*P_WRITTEN) -> sel_length) = ((*P_WRITTEN) -> prg_allocbits);
+				split(*P_WRITTEN);
+				halve(*P_WRITTEN);
 			}
 			return;
 		}
@@ -813,7 +822,7 @@ unsigned long report_by_bit_index(Path path, unsigned int i, unsigned int len)
 
 void write_by_bit_index(Path path, unsigned int i, unsigned int len, unsigned long write)
 {
-	int shift = CELL - (i % CELL) - len;
+	int shift = CELL - intIndex - len;
 	write &= mask(len);
 	P_DATA[i / CELL] &= ~(mask(len) << shift);
 	P_DATA[i / CELL] |= (write << shift);
@@ -830,14 +839,19 @@ void bin_print(Path path)
 	{
 		long i = 0;
 		for (; i < (P_ALC / CELL); i++)
-			/*printf("%s", bin(P_DATA[i]));*/
-			printf("%x", P_DATA[i]);
+			printf("%s", bin(P_DATA[i]));
 	}
+}
+
+void todo()
+{
+	printf("!!! NOT IMPLEMENTED YET !!!\n");
+	return;
 }
 
 void skip()
 {
 	if (VERBOSE)
 		printf("%s ", "SKIP");
-	(P_RUNNING -> prg_index)++;
+	((*P_RUNNING) -> prg_index)++;
 }

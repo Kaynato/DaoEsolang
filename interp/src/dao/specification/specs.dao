@@ -59,7 +59,8 @@ EXECS
 		If the finish was due to program deallocation,
 			replaced by IDLES if terminating bit was 0
 			replaced by SWAPS if terminating bit was 1
-			
+	
+	
 DELEV
 	Decrements level.
 	
@@ -72,7 +73,6 @@ HALVE
 	Otherwise
 		If there is a lower program
 			Move selection to lower program, selecting all data
-				HALVE
 		Otherwise
 			IDLES
 			
@@ -100,9 +100,16 @@ DEALC
 			End the program
 			
 SPLIT
-	Split selection into halves.
-	Force left all to 1, force right all to 0.
-	Select left.
+	If selection > 1
+		Split selection into halves.
+		Force left all to 1, force right all to 0.
+		Select left.
+	Otherwise
+		If there is a lower program
+			Move selection to lower program, selecting all
+				SPLIT, HALVE
+		Otherwise
+			IDLES
 	
 POLAR
 	If selection first bit is not greater than selection last bit, skip next command
@@ -121,7 +128,7 @@ INPUT
 
 What is "level?"
 
-LEVEL...
+At LEVEL x or above...
 
 0:
 	default level
@@ -152,6 +159,18 @@ LEVEL...
 7:
 	MERGE is skipped.
 	HALVE is skipped.
+
+8:
+	EXECS is skipped.
 	
-8: (max)
+9: (max)
 	UPLEV decrements the pointer while restarting.
+	
+...
+
+How is the program run?
+
+If written in symbolic, it must be compiled to the actual hex code.
+
+When the hex code is run, the program feeds in the bits to a data array 
+	and calls EXECS on the array, as a top level program.

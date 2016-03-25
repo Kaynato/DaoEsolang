@@ -1,0 +1,16 @@
+@ Allocate
+$$$$$
+@ Construct a program that deallocates with zero
+[(((/[])/[])/([]!/([])))/(([/[]]!))]
+@ Delev (to control loop)
+>
+@ Check the above program to see what's going on
+@ )(
+@ Run the deallocator, thus replacing execs
+#
+@ Make sure it replaced it
+@ )(
+@ Restart with condition of the data
+*<
+@ The replacement of the execs should, when used, alter the data for the restart condition
+
