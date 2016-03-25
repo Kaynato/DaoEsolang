@@ -38,6 +38,10 @@ $$$>
 		*<
 	@ Exit first portion. 0011 Ensured.
 	)
-@ Next
-/
-@ 
+	@ Next
+	/
+	@ Examine first two bits
+	(
+		@ Prohibit 11..
+		=<
+		
