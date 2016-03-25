@@ -1,6 +1,6 @@
 TO RUN:
 
-	Add this directory to your %path to be able to call dao from anywhere.
-	Use cmd and cd to this directory.
+	Put dao.exe in your path.
 	
-	Use dao to run.
+	Use dao from the command line.
+	
