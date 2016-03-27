@@ -7,6 +7,13 @@ int main()
 	int c = 32;
 	int d = 1;
 
+	char* rog = "0123456789";
+
+	putchar(rog[1]);
+
+	return 0;
+
+
 	b += c;
 
 	while (a-- > 0)

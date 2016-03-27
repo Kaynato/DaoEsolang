@@ -7,7 +7,6 @@
 #define FILE_SYMBOLIC ".dao"
 #define FILE_COMPILED ".wuwei"
 #define ming typedef unsigned
-
 #define pvx static void
 
 typedef struct PATH* Path;
@@ -15,6 +14,7 @@ typedef char* String;
 ming long wux; ming char wei; ming int wan;
 
 pvx compile(FILE*, FILE*);
+
 pvx swaps(Path); pvx later(Path); pvx merge(Path);
 pvx sifts(Path); pvx execs(Path, Path); pvx delev(Path); pvx equal(Path);
 pvx halve(Path); pvx uplev(Path); pvx reads(Path); pvx dealc(Path);
@@ -26,12 +26,11 @@ wei getNybble(char);
 wux rbbi(Path, wux, wux);
 pvx wbbi(Path, wux, wux, wux);
 
-char*			bin(wux);
-char*			itoa(wux, wei, wei);
-pvx			bin_print(Path);
-pvx			skip();
-
-char algn(Path);
+char*	bin(wux);
+char*	itoa(wux, wei, wei);
+char 	algn(Path);
+pvx		bin_print(Path);
+pvx		skip();
 
 struct PATH
 {
@@ -49,13 +48,13 @@ const struct PATH NEW_PATH = { NULL, NULL, {0}, 1, 0, 0, 1, 0 };
 
 #define sbc(c,f,x) while((c = fgetc(f)) != EOF) {x}
 #define wheel(k, n, x) if (++k == n) {k = 0; x}
-#define verp(x) verx{printf(x);}
-#define verx if (VERBOSE)
+#define roc(o,c) case o:c=1;break;
+#define verp(x) vrx{printf(x);}
+#define vrx if (VERBOSE)
 
 static char VERBOSE = 0, COMP_ONLY = 0, FORCE = 0;
 static const String symbols = ".!/)%#>=(<:S[*$;";
-static Path P_RUNNING;
-static Path P_WRITTEN;
+static Path P_RUNNING, P_WRITTEN;
 
 int main(int argc, char * const argv[])
 {
@@ -87,13 +86,13 @@ int main(int argc, char * const argv[])
 		printf("\t\t##|      D      A      O      |##\n");
 		printf("\t\t###===========================###\n");
 		printf("\t\t#################################\n");
-		printf("\r\n[Welcome to DAOLANGUAGE UTILITY ver 1.0.0.0]\n");
+		printf("\r\n[Welcome to DAOLANGUAGE UTILITY ver 1.2.0.0]\n");
 		printf("\tPlease remember to enter a filename as a parameter, for example:\n\n");
 		printf("\t\"> dao hello_world.dao\"\n");
 		printf("\t\tto compile and execute.\n\n");
 		printf("Options:\n");
-		printf("\t-v : Enable Verbose Execution (For Debugging)\n");
 		printf("\t-c : Compile without running\n");
+		printf("\t-v : Enable Verbose Execution (For Debugging)\n");
 		printf("\t-f : Force Execution of Any File as DAOLANGUAGE (DANGEROUS)\n");
 		printf("\n");
 		return(0);
@@ -104,9 +103,9 @@ int main(int argc, char * const argv[])
 	while ((c = getopt(argc, argv, "vcf")) != -1)
 		switch (c)
 		{
-		case 'f':	FORCE = 1;		break;
-		case 'v':	VERBOSE = 1;	break;
-		case 'c':	COMP_ONLY = 1;	break;
+		roc('f',FORCE)
+		roc('v',VERBOSE)
+		roc('c',COMP_ONLY)
 		case '?':
 			printf("Unknown option -%c.\n\n", optopt);
 			break;
@@ -119,20 +118,20 @@ int main(int argc, char * const argv[])
 	}
 	if (~strcmp(FILE_SYMBOLIC, &ifun[strlen(ifun)-4]))
 	{
-		FILE* outputFile;
+		FILE* ofle;
 		ifun[strlen(ifun)-4] = 0;
 		ifun = strncat(ifun, FILE_COMPILED, sizeof(FILE_COMPILED));
-		outputFile = fopen(ifun,"w+");
-		verx printf("\n%s%s\n", "Compiling symbolic dao to ", ifun);
-		compile(ifle, outputFile);
+		ofle = fopen(ifun,"wb+");
+		vrx printf("\n%s%s\n", "Compiling symbolic dao to ", ifun);
+		compile(ifle, ofle);
 		verp("Finished compiling.");
 		fclose(ifle);
-		fclose(outputFile);
+		fclose(ofle);
 		if (COMP_ONLY)
 			return 0;
 	}
 	ifle = fopen(ifun,"rb");
-	verx
+	vrx
 	{
 		printf("\n\n\t=====================\n");
 		printf(	"\t|Beginning Execution|\n");
@@ -140,34 +139,33 @@ int main(int argc, char * const argv[])
 	}
 	if (FORCE || ~strcmp(FILE_COMPILED, &ifun[strlen(ifun)-6]))
 	{
-		int c, i = 0, shift = 0, j = 0, k = 0;
+		int c, i = 0, shift = 0, j = 0, k = 0, l = 0;
 		struct PATH newpath = NEW_PATH;
 		Path dao = &newpath;
-		verx printf("%s%s.\nLoading data:\n", "Running ", ifun);
+		vrx printf("%s%s.\nLoading data:\n", "Running ", ifun);
 		sbc(c, ifle,
 			(dao -> prg_data)[i] |= ((wux)c << ((3 - shift) * 8));
+			l++;
 			wheel(shift, 4, i++;)
 		)
-		if (feof(ifle))
-		{
-			verx printf("Hit end of file at position %x.\n\n", i*4 + shift);
-		}
-		else
+		if (!feof(ifle))
 		{
 			printf("Encountered an error during file read.\n");
 			return(22);
-		}	
+		}
+		vrx printf("(%d bytes)\n\n", l);
+		vrx printf("Hit end of file at position %x.\n\n", i*4 + shift);
+		while ((dao -> prg_allocbits) / 8 < l)
+			(dao -> prg_allocbits) *= 2;
 		while (j++ < (i + ((shift + 3) / 4)))
 		{
-			verx
+			vrx
 			{
-				printf("%x   ", (dao -> prg_data)[j-1]);
+				printf("%s   ", itoa((dao -> prg_data)[j-1], 8, 16));
 				wheel(k, 7, printf("\n");)
 			}
 		}
-		verx printf("(%d bytes)\n\n", 4 * j);	
-		while ((dao -> prg_allocbits) / 32 < j)
-			(dao -> prg_allocbits) *= 2;
+		vrx printf("(%d bytes)\n\n", (dao -> prg_allocbits) / 8);
 		P_RUNNING = dao;
 		execs(dao, NULL);
 	}
@@ -188,13 +186,13 @@ pvx compile(FILE* input, FILE* output)
 		default:
 			if (isComment)
 				break;
-			verx putchar((char)ch);
+			vrx putchar((char)ch);
 			if (!emptyBuffer)
 			{
 				toWrite |= getNybble((char)ch);
 				fputc(toWrite, output);
-				verx printf(" %x ", toWrite);
-				wheel(k, 8, putchar('\n');)
+				vrx printf(" %s ", itoa(toWrite, 2, 16));
+				wheel(k, 8, vrx putchar('\n');)
 			}
 			else
 				toWrite = (char)(getNybble((char)ch) << 4);
@@ -204,8 +202,7 @@ pvx compile(FILE* input, FILE* output)
 	)
 	if (!emptyBuffer) {
 		fputc(toWrite, output);
-		if (VERBOSE)
-			printf(". %x\n", toWrite);
+		vrx printf(". %x\n", toWrite);
 	}
 }
 
@@ -260,31 +257,22 @@ static wan floor = 0;
 
 pvx swaps(Path path)
 {
+	wan i = 0;
+	wux report = 0;
 	levlim(2)
-	verx
-		printf("Swapped length %d.", P_LEN);
+	vrx printf("Swapped length %d.", P_LEN);
 	if (P_LEN == 1)	return;
 	if (P_LEN <= CELL)
 	{
-		wan len = P_LEN;
-		wan shift = CELL - (P_IND % CELL) - len;
-		wux report = (P_DATA[(P_IND / CELL)] >> shift) & mask(len);
-		wux right = report & mask(len >> 1);
-		wux recombine = (right << (len >> 1)) | (report >> (len >> 1));
-		P_DATA[(P_IND / CELL)] &= ~(mask(len) << shift);
-		P_DATA[(P_IND / CELL)] |= recombine << shift;
+		wux hlen = P_LEN/2;
+		wbbi(path, P_IND, P_LEN, rbbi(path, P_IND, hlen) | (rbbi(path, P_IND + hlen, hlen) << hlen));
+		return;
 	}
-	else
+	while (i < ((P_LEN / CELL) / 2))
 	{
-		int i = 0, leftIndex = (P_IND / CELL), half = (P_LEN / CELL) / 2;
-		wux holder;
-		while (i < half)
-		{
-			holder = P_DATA[leftIndex + i];
-			P_DATA[leftIndex + i] = P_DATA[leftIndex + half + i];
-			P_DATA[leftIndex + half + i] = holder;
-			i++;
-		}
+		report = P_DATA[(P_IND / CELL) + i];
+		P_DATA[(P_IND / CELL) + i] = P_DATA[(P_IND / CELL) + ((P_LEN / CELL) / 2) + i];
+		P_DATA[(P_IND / CELL) + ((P_LEN / CELL) / 2) + i++] = report;
 	}
 }
 
@@ -319,13 +307,9 @@ pvx sifts(Path path)
 		if (!rbbi(path, l, 4))
 		{
 			int r = l;
-			verx printf("IDLES (%s) encountered at index %d.\n", bin(rbbi(path, l, 4)), l);
-			for (; rbbi(path, r, 4) && ((r + 4) < P_ALC); r++); /* Move right to first */
-			for (;!rbbi(path, l, 4) && rbbi(path, r, 4) && ((r + 4) < P_ALC); l += 4, r += 4)
-			{
-				wbbi(path, l, 4, rbbi(path, r, 4));
-				wbbi(path, r, 4, 0);
-			}
+			for (;!rbbi(path, r, 4) && ((r + 4) < P_ALC);r+=4);
+			wbbi(path, l, 4, rbbi(path, r, 4));
+			wbbi(path, r, 4, 0);
 		}
 		l += 4;
 	}
@@ -333,6 +317,12 @@ pvx sifts(Path path)
 
 static wei command = 0;
 static int doloop = 1;
+
+static void(*functions[16])(Path) = \
+   {NULL , swaps, later, merge, \
+	sifts, NULL , delev, equal, \
+	halve, uplev, reads, dealc, \
+	split, polar, doalc, input};
 
 void execs(Path path, Path caller)
 {
@@ -347,27 +337,28 @@ void execs(Path path, Path caller)
 		printf("FATAL ERROR: Unable to allocate memory.");
 		return;
 	}
-
-	verx printf("Allocated %d bytes.\n\n", sizeof(*P_CHILD));
-
+	vrx printf("Allocated %d bytes.\n\n", sizeof(*P_CHILD));
 	memcpy(P_CHILD, &NEW_PATH, sizeof(struct PATH));
 	(*(*path).child).owner = path;
 	P_WRITTEN = P_CHILD;
 	P_PIND = (P_IND / 4);
-
 	/* Execs Loop */
 	for (; doloop && P_PIND < (P_ALC / 4); P_PIND++)
 	{
 		tempNum1 = (P_RUNNING -> prg_index);
 		command = ((P_RUNNING -> prg_data)[(tempNum1*4) / 32] >> (32 - ((tempNum1*4) % 32) - 4)) & mask(4);
-
-		verx
+		vrx
 		{
 			printf("%s F%x L%d %c ", itoa(P_PIND, 5, 16), floor, PR_LEV, getChar(command));
 			bin_print(P_WRITTEN);
 			printf(" : ");
 		}
-
+		
+		if (command == 5)
+			execs(P_WRITTEN, path);
+		else if (command != 0)
+			functions[command](P_WRITTEN);
+		/*
 		switch(command)
 		{
 			case 0x1: swaps(P_WRITTEN); break;
@@ -386,10 +377,21 @@ void execs(Path path, Path caller)
 			case 0xE: doalc(P_WRITTEN); break;
 			case 0xF: input(P_WRITTEN); break;
 		}
+		*/
 		verp("\n");
 	}
-	doloop = 1;
-	if (caller != NULL)
+	if (!doloop)
+	{
+		vrx printf("Freed %d bytes.\n\n", sizeof(*P_CHILD));
+		free(P_CHILD);
+		doloop = 1;
+	}
+	if (caller == NULL)
+	{
+		verp("Top-level program terminated.")
+		free(P_CHILD);
+	}
+	else
 	{
 		P_RUNNING = caller;
 		P_WRITTEN = caller -> child;
@@ -458,9 +460,7 @@ pvx dealc(Path path)
 		if ((P_RUNNING -> owner) != NULL)
 		{
 			wux ownind = ((P_RUNNING -> owner) -> prg_index);
-			verx
-				printf("Terminating program from position %x with value %x",\
-					ownind, report);
+			vrx printf("Terminating program from position %x with value %x", ownind, report);
 			wbbi(P_RUNNING -> owner, (ownind) * 4, 4, report);
 		}
 		doloop = 0;
@@ -487,7 +487,6 @@ pvx split(Path path)
 			halve(P_WRITTEN);
 			return;
 		}
-
 		if (len <= CELL)
 		{
 			wbbi(path, P_IND, len >> 1, mask(len));
@@ -495,8 +494,8 @@ pvx split(Path path)
 		}
 		else
 		{
-			int leftIndex = (P_IND / CELL);
-			int rightIndex = leftIndex + (len / CELL) - 1;
+			wan leftIndex = (P_IND / CELL);
+			wan rightIndex = leftIndex + (len / CELL) - 1;
 			while (leftIndex < rightIndex)
 			{
 				P_DATA[leftIndex++] = 0xFFFFFFFF;
@@ -530,19 +529,15 @@ pvx doalc(Path path)
 
 pvx input(Path path)
 {
+	int i = P_IND;
 	levlim(6)
 	if (P_LEN < 8)
 	{
 		wbbi(path, P_IND, P_LEN, getchar());
 		return;
 	}
-	else
-	{
-		int i = P_IND;
-		for (; i < P_LEN; i += 8)
-			wbbi(path, i, 8, getchar());
-	}
-
+	for (; i < (P_IND + P_LEN); i += 8)
+		wbbi(path, i, 8, getchar());
 }
 
 char algn(Path path)

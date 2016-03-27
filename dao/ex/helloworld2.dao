@@ -1,0 +1,20 @@
+@ Helloworld 2: Cheating VIA Ascent. Nybblecode not obfuscated.
+@ H  e  l  l  o     w  o  r  l  d  !  LF
+@ 48 65 6C 6C 6F 20 77 6F 72 6C 64 21 0A 00 00 00
+@ %( ># >[ >[ >; /. == >; =/ >[ >% /! .: .. .. ..
+
+@ Ascend
+)
+	@ Move into correct position
+	)))))))/
+	@ Read
+	:
+@ Terminate program
+((((((S
+@ Pad partition
+...............
+@ Data
+@ Pad partition for safety
+%(>#>[>[>;/.==>;=/>[>%/!.:......
+@))))))))/:((((((S...............%(>#>[>[>;/.==>;=/>[>%/!.:......
+@ For comparison

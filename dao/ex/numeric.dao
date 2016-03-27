@@ -1,5 +1,6 @@
 @ Will not traverse unless numeric
 @ num digits: 0x30 thru 0x39
+
 @ 0011 0000 0
 @ 0011 0001 1
 @ 0011 0010 2 
@@ -17,6 +18,9 @@
 @ 0011 1101 =
 @ 0011 1110 >
 @ 0011 1111 ?
+
+@ 0000 1010 \n
+@ 0000 1110 \r
 
 
 
@@ -40,8 +44,16 @@ $$$>
 	)
 	@ Next
 	/
+
+
+
+
 	@ Examine first two bits
 	(
-		@ Prohibit 11..
+		@ Prohibit 11.. but also wipes 00..
 		=<
 		
+
+	)
+
+)
