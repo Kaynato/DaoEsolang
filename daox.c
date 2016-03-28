@@ -10,10 +10,11 @@
 #define pvx static void
 
 typedef struct PATH* Path;
+typedef FILE* File;
 typedef char* String;
 ming long wux; ming char wei; ming int wan;
 
-pvx compile(FILE*, FILE*);
+pvx compile(File, File);
 
 pvx swaps(Path); pvx later(Path); pvx merge(Path);
 pvx sifts(Path); pvx execs(Path, Path); pvx delev(Path); pvx equal(Path);
@@ -55,50 +56,22 @@ const struct PATH NEW_PATH = { NULL, NULL, {0}, 1, 0, 0, 1, 0 };
 static char VERBOSE = 0, COMP_ONLY = 0, FORCE = 0;
 static const String symbols = ".!/)%#>=(<:S[*$;";
 static Path P_RUNNING, P_WRITTEN;
+static wan floor = 0;
+
+pvx splash();
 
 int main(int argc, char * const argv[])
 {
-	String ifun = NULL;
-	FILE* ifle = NULL;
+	String inputFileName = NULL;
+	File ifle = NULL;
 	int c = 0;
 	if (argc < 2)
 	{
-		printf("\t\t#################################\n");
-		printf("\t\t##############     ##############\n");
-		printf("\t\t#########     #####     #########\n");
-		printf("\t\t######   ###############   ######\n");
-		printf("\t\t####   ###################   ####\n");
-		printf("\t\t###  #######################  ###\n");
-		printf("\t\t##  #####   ########====#####  ##\n");
-		printf("\t\t#  #####     #####==    ===###  #\n");
-		printf("\t\t# =#####     ####=         ==## #\n");
-		printf("\t\t#+ =#####   ####=    +++     =# #\n");
-		printf("\t\t#+  ==#########=    +++++     =+#\n");
-		printf("\t\t#++   ===####==     +++++     ++#\n");
-		printf("\t\t##++     ====        +++     ++##\n");
-		printf("\t\t###++                       ++###\n");
-		printf("\t\t####+++                   +++####\n");
-		printf("\t\t######+++               +++######\n");
-		printf("\t\t#########+++++     +++++#########\n");
-		printf("\t\t##############+++++##############\n");
-		printf("\t\t#################################\n");
-		printf("\t\t###===========================###\n");
-		printf("\t\t##|      D      A      O      |##\n");
-		printf("\t\t###===========================###\n");
-		printf("\t\t#################################\n");
-		printf("\r\n[Welcome to DAOLANGUAGE UTILITY ver 1.2.0.0]\n");
-		printf("\tPlease remember to enter a filename as a parameter, for example:\n\n");
-		printf("\t\"> dao hello_world.dao\"\n");
-		printf("\t\tto compile and execute.\n\n");
-		printf("Options:\n");
-		printf("\t-c : Compile without running\n");
-		printf("\t-v : Enable Verbose Execution (For Debugging)\n");
-		printf("\t-f : Force Execution of Any File as DAOLANGUAGE (DANGEROUS)\n");
-		printf("\n");
+		splash();
 		return(0);
 	}
-	ifun = argv[1];
-	ifle = fopen(ifun,"rb");
+	inputFileName = argv[1];
+	ifle = fopen(inputFileName,"rb");
 	opterr = 0;
 	while ((c = getopt(argc, argv, "vcf")) != -1)
 		switch (c)
@@ -112,17 +85,17 @@ int main(int argc, char * const argv[])
 		}
 	if (ifle == NULL)
 	{
-		printf("Could not find \"%s\" - is it in this directory?\n", ifun);
+		printf("Could not find \"%s\" - is it in this directory?\n", inputFileName);
 		fclose(ifle);
 		return 1;
 	}
-	if (~strcmp(FILE_SYMBOLIC, &ifun[strlen(ifun)-4]))
+	if (~strcmp(FILE_SYMBOLIC, &inputFileName[strlen(inputFileName)-4]))
 	{
-		FILE* ofle;
-		ifun[strlen(ifun)-4] = 0;
-		ifun = strncat(ifun, FILE_COMPILED, sizeof(FILE_COMPILED));
-		ofle = fopen(ifun,"wb+");
-		vrx printf("\n%s%s\n", "Compiling symbolic dao to ", ifun);
+		File ofle;
+		inputFileName[strlen(inputFileName)-4] = 0;
+		inputFileName = strncat(inputFileName, FILE_COMPILED, sizeof(FILE_COMPILED));
+		ofle = fopen(inputFileName,"wb+");
+		vrx printf("\n%s%s\n", "Compiling to ", inputFileName);
 		compile(ifle, ofle);
 		verp("Finished compiling.");
 		fclose(ifle);
@@ -130,39 +103,44 @@ int main(int argc, char * const argv[])
 		if (COMP_ONLY)
 			return 0;
 	}
-	ifle = fopen(ifun,"rb");
+	ifle = fopen(inputFileName,"rb");
 	vrx
 	{
 		printf("\n\n\t=====================\n");
 		printf(	"\t|Beginning Execution|\n");
 		printf(	"\t=====================\n\n");
 	}
-	if (FORCE || ~strcmp(FILE_COMPILED, &ifun[strlen(ifun)-6]))
+	if (FORCE || ~strcmp(FILE_COMPILED, &inputFileName[strlen(inputFileName)-6]))
 	{
-		int c, i = 0, shift = 0, j = 0, k = 0, l = 0;
+		int character, \
+			print_index = 0, \
+			print_line_loop = 0, \
+			read_index = 0;
 		struct PATH newpath = NEW_PATH;
 		Path dao = &newpath;
-		vrx printf("%s%s.\nLoading data:\n", "Running ", ifun);
-		sbc(c, ifle,
-			(dao -> prg_data)[i] |= ((wux)c << ((3 - shift) * 8));
-			l++;
-			wheel(shift, 4, i++;)
+
+		vrx printf("%s%s.\nLoading data:\n", "Running ", inputFileName);
+
+		sbc(character, ifle,
+			(dao -> prg_data)[read_index / 4] |= ((wux)character << ((3 - (read_index % 4))) * 8);
+			read_index++;
 		)
+
 		if (!feof(ifle))
 		{
 			printf("Encountered an error during file read.\n");
 			return(22);
 		}
-		vrx printf("(%d bytes)\n\n", l);
-		vrx printf("Hit end of file at position %x.\n\n", i*4 + shift);
-		while ((dao -> prg_allocbits) / 8 < l)
+
+		while ((dao -> prg_allocbits) / 8 < read_index)
 			(dao -> prg_allocbits) *= 2;
-		while (j++ < (i + ((shift + 3) / 4)))
+		
+		while (print_index++ < ((read_index / 4) + (((read_index % 4) + 3) / 4)))
 		{
 			vrx
 			{
-				printf("%s   ", itoa((dao -> prg_data)[j-1], 8, 16));
-				wheel(k, 7, printf("\n");)
+				printf("%s   ", itoa((dao -> prg_data)[print_index-1], 8, 16));
+				wheel(print_line_loop, 7, printf("\n");)
 			}
 		}
 		vrx printf("(%d bytes)\n\n", (dao -> prg_allocbits) / 8);
@@ -172,7 +150,43 @@ int main(int argc, char * const argv[])
 	return 0;
 }
 
-pvx compile(FILE* input, FILE* output)
+pvx splash()
+{
+	printf("\t\t#################################\n");
+	printf("\t\t##############     ##############\n");
+	printf("\t\t#########     #####     #########\n");
+	printf("\t\t######   ###############   ######\n");
+	printf("\t\t####   ###################   ####\n");
+	printf("\t\t###  #######################  ###\n");
+	printf("\t\t##  #####   ########====#####  ##\n");
+	printf("\t\t#  #####     #####==    ===###  #\n");
+	printf("\t\t# =#####     ####=         ==## #\n");
+	printf("\t\t#+ =#####   ####=    +++     =# #\n");
+	printf("\t\t#+  ==#########=    +++++     =+#\n");
+	printf("\t\t#++   ===####==     +++++     ++#\n");
+	printf("\t\t##++     ====        +++     ++##\n");
+	printf("\t\t###++                       ++###\n");
+	printf("\t\t####+++                   +++####\n");
+	printf("\t\t######+++               +++######\n");
+	printf("\t\t#########+++++     +++++#########\n");
+	printf("\t\t##############+++++##############\n");
+	printf("\t\t#################################\n");
+	printf("\t\t###===========================###\n");
+	printf("\t\t##|      D      A      O      |##\n");
+	printf("\t\t###===========================###\n");
+	printf("\t\t#################################\n");
+	printf("\r\n[Welcome to DAOLANGUAGE UTILITY ver 1.2.0.0]\n");
+	printf("\tPlease remember to enter a filename as a parameter, for example:\n\n");
+	printf("\t\"> dao hello_world.dao\"\n");
+	printf("\t\tto compile and execute.\n\n");
+	printf("Options:\n");
+	printf("\t-c : Compile without running\n");
+	printf("\t-v : Enable Verbose Execution (For Debugging)\n");
+	printf("\t-f : Force Execution of Any File as DAOLANGUAGE (DANGEROUS)\n");
+	printf("\n");
+}
+
+pvx compile(File input, File output)
 {
 	wei emptyBuffer = 1, toWrite = 0, isComment = 0, k = 0;
 	int ch;
@@ -240,9 +254,7 @@ char* itoa(wux val, wei len, wei radix)
 }
 
 #define CELL 32
-
 #define levlim(l)		if (PR_LEV >= l) {verp("LEV_SKIP");return;}
-
 #define P_LEN 			(path -> sel_length)
 #define P_IND 			(path -> sel_index)
 #define P_ALC 			(path -> prg_allocbits)
@@ -252,8 +264,6 @@ char* itoa(wux val, wei len, wei radix)
 #define P_OWNER			(path -> owner)
 #define P_CHILD			(path -> child)
 #define PR_LEV 			(P_RUNNING -> prg_level)
-
-static wan floor = 0;
 
 pvx swaps(Path path)
 {
@@ -353,7 +363,6 @@ void execs(Path path, Path caller)
 			bin_print(P_WRITTEN);
 			printf(" : ");
 		}
-		
 		if (command == 5)
 			execs(P_WRITTEN, path);
 		else if (command != 0)
