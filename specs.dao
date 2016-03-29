@@ -140,4 +140,19 @@ LEVEL TABLE (Behavior of symbols at different levels)
 @ When the hex code is run, the program feeds in the bits to a data array 
 @ 	and calls EXECS on the array, as a top level program.
 
-. IDLES, ! SWAPS, / LATER, ]) MERGE, % SIFTS, # EXECS, > DELEV, = EQUAL, ( HALVE, < UPLEV, : READS, S DEALC, [ SPLIT, * POLAR, $ DOALC, ; INPUT
+* IDLES - '.'
+* SWAPS - '!'
+* LATER - '/'
+* MERGE - ']' or ')'
+* SIFTS - '%'
+* EXECS - '#'
+* DELEV - '>'
+* EQUAL - '='
+* HALVE - '('
+* UPLEV - '<'
+* READS - ':'
+* DEALC - 'S'
+* SPLIT - '['
+* POLAR - '*'
+* DOALC - '$'
+* INPUT - ';'
