@@ -20,7 +20,7 @@ Daox.exe is a development version.
 * **.wuwei** - compiled tetrad code _(for execution)_  
 
 ##### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**.dao** is a text-editable format containing the 16 Daoyu Human-Friendly Symbols:
-![. IDLES, ! SWAPS, / LATER, \]) MERGE, % SIFTS, # EXECS, > DELEV, = EQUAL, ( HALVE, < UPLEV, : READS, S DEALC, \[ SPLIT, * POLAR, $ DOALC, ; INPUT](SYMBOLS.png)
+![. IDLES, ! SWAPS, / LATER, \]) MERGE, % SIFTS, # EXECS, > DELEV, = EQUAL, ( HALVE, < UPLEV, : READS, S DEALC, \[ SPLIT, * POLAR, $ DOALC, ; INPUT](SYMBOLS.png)  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;All symbols in a line after '@' will not be read by the compiler.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The following table describes the functionality of "Level." At the level shown on the left hand column, the functionality of the symbol first defined at **level 0**  should be altered to that at the appropriate row of level. For example, at **level 1**, SPLIT is interpreted as HALVE and DOALC is treated as IDLES.  
 ![Level table](LEVELTABLE.png)  
