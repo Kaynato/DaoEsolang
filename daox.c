@@ -2,47 +2,50 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
 /* Obfuscation in progress */
-#define MAX_BIT_SIZE (wux)(1 << 17)
+#define MAX_BIT_SIZE (unsigned long)(1 << 17)
 #define FILE_SYMBOLIC ".dao"
 #define FILE_COMPILED ".wuwei"
-#define ming typedef unsigned
-#define pvx static void
 
 typedef struct PATH* Path;
 typedef FILE* File;
 typedef char* String;
-ming long wux; ming char wei; ming int wan;
+/*
+#define static void static void
+typedef unsigned long unsigned long; 
+typedef unsigned char unsigned char; 
+typedef unsigned int unsigned int;
+*/
+static void compile(File, File);
 
-pvx compile(File, File);
+static void swaps(Path); static void later(Path); static void merge(Path);
+static void sifts(Path); static void execs(Path, Path); static void delev(Path); static void equal(Path);
+static void halve(Path); static void uplev(Path); static void reads(Path); static void dealc(Path);
+static void split(Path); static void polar(Path); static void doalc(Path); static void input(Path);
 
-pvx swaps(Path); pvx later(Path); pvx merge(Path);
-pvx sifts(Path); pvx execs(Path, Path); pvx delev(Path); pvx equal(Path);
-pvx halve(Path); pvx uplev(Path); pvx reads(Path); pvx dealc(Path);
-pvx split(Path); pvx polar(Path); pvx doalc(Path); pvx input(Path);
+char getChar(unsigned char);
+unsigned long mask(int);
+unsigned char getNybble(char);
+unsigned long rbbi(Path, unsigned long, unsigned long);
+static void wbbi(Path, unsigned long, unsigned long, unsigned long);
 
-char getChar(wei);
-wux mask(int);
-wei getNybble(char);
-wux rbbi(Path, wux, wux);
-pvx wbbi(Path, wux, wux, wux);
-
-char*	bin(wux);
-char*	itoa(wux, wei, wei);
+char*	bin(unsigned long);
+char*	itoa(unsigned long, unsigned char, unsigned char);
 char 	algn(Path);
-pvx		bin_print(Path);
-pvx		skip();
+static void		bin_print(Path);
+static void		skip();
 
 struct PATH
 {
 	Path 			owner;			/* OWNER      PROGRAM */
 	Path 			child;			/* CHILD      PROGRAM */
-	wux	prg_data[ MAX_BIT_SIZE ];	/*		   DATA	      */
-	wux	prg_allocbits;				/* OPEN	   DATA   BITS*/
-	wux	prg_index;					/* INSTRUCTION POINTER*/
-	wei	prg_level;					/* OPERATING   LEVEL  */
-	wux	sel_length;					/* LENGTH OF SELECTION*/
-	wux	sel_index;					/* INDEX  OF SELECTION*/
+	unsigned long	prg_data[ MAX_BIT_SIZE ];	/*		   DATA	      */
+	unsigned long	prg_allocbits;				/* OPEN	   DATA   BITS*/
+	unsigned long	prg_index;					/* INSTRUCTION POINTER*/
+	unsigned char	prg_level;					/* OPERATING   LEVEL  */
+	unsigned long	sel_length;					/* LENGTH OF SELECTION*/
+	unsigned long	sel_index;					/* INDEX  OF SELECTION*/
 };
 
 const struct PATH NEW_PATH = { NULL, NULL, {0}, 1, 0, 0, 1, 0 };
@@ -55,10 +58,10 @@ const struct PATH NEW_PATH = { NULL, NULL, {0}, 1, 0, 0, 1, 0 };
 
 static char VERBOSE = 0, COMP_ONLY = 0, FORCE = 0;
 static const String symbols = ".!/)%#>=(<:S[*$;";
-static Path P_RUNNING, P_WRITTEN;
-static wan floor = 0;
+static Path P_RUNNING = NULL, P_WRITTEN = NULL;
+static unsigned int floor = 0;
 
-pvx splash();
+static void splash();
 
 int main(int argc, char * const argv[])
 {
@@ -122,7 +125,7 @@ int main(int argc, char * const argv[])
 		vrx printf("%s%s.\nLoading data:\n", "Running ", inputFileName);
 
 		sbc(character, ifle,
-			(dao -> prg_data)[read_index / 4] |= ((wux)character << ((3 - (read_index % 4))) * 8);
+			(dao -> prg_data)[read_index / 4] |= ((unsigned long)character << ((3 - (read_index % 4))) * 8);
 			read_index++;
 		)
 
@@ -150,7 +153,7 @@ int main(int argc, char * const argv[])
 	return 0;
 }
 
-pvx splash()
+static void splash()
 {
 	printf("\t\t#################################\n");
 	printf("\t\t##############     ##############\n");
@@ -175,20 +178,20 @@ pvx splash()
 	printf("\t\t##|      D      A      O      |##\n");
 	printf("\t\t###===========================###\n");
 	printf("\t\t#################################\n");
-	printf("\r\n[Welcome to DAOLANGUAGE UTILITY ver 1.2.0.0]\n");
+	printf("\r\n[Welcome to C-DAOYU-UTILITY 1.0.0.0]\n");
 	printf("\tPlease remember to enter a filename as a parameter, for example:\n\n");
 	printf("\t\"> dao hello_world.dao\"\n");
 	printf("\t\tto compile and execute.\n\n");
 	printf("Options:\n");
 	printf("\t-c : Compile without running\n");
 	printf("\t-v : Enable Verbose Execution (For Debugging)\n");
-	printf("\t-f : Force Execution of Any File as DAOLANGUAGE (DANGEROUS)\n");
+	printf("\t-f : Force Execution of Any File as COMPILED DAOYU (DANGEROUS)\n");
 	printf("\n");
 }
 
-pvx compile(File input, File output)
+static void compile(File input, File output)
 {
-	wei emptyBuffer = 1, toWrite = 0, isComment = 0, k = 0;
+	unsigned char emptyBuffer = 1, toWrite = 0, isComment = 0, k = 0;
 	int ch;
 	sbc(ch, input,
 		switch((char)ch)
@@ -222,7 +225,7 @@ pvx compile(File input, File output)
 
 #define rc(r,c) case c: return r;
 
-wei getNybble(char ch)
+unsigned char getNybble(char ch)
 {
    switch (ch) 
    {
@@ -234,15 +237,15 @@ wei getNybble(char ch)
 	}
 }
 
-char* bin(wux val) { return itoa(val, 32, 2); }
+char* bin(unsigned long val) { return itoa(val, 32, 2); }
 
-char getChar(wei ch)
+char getChar(unsigned char ch)
 {
    if (ch > 0xF) return '?';
    return symbols[ch];
 }
 
-char* itoa(wux val, wei len, wei radix)
+char* itoa(unsigned long val, unsigned char len, unsigned char radix)
 {
 	static char buf[32] = {'0'};
 	int i = 33;
@@ -265,16 +268,18 @@ char* itoa(wux val, wei len, wei radix)
 #define P_CHILD			(path -> child)
 #define PR_LEV 			(P_RUNNING -> prg_level)
 
-pvx swaps(Path path)
+static unsigned long startpos = 0;
+
+static void swaps(Path path)
 {
-	wan i = 0;
-	wux report = 0;
+	unsigned int i = 0;
+	unsigned long report = 0;
 	levlim(2)
 	vrx printf("Swapped length %d.", P_LEN);
 	if (P_LEN == 1)	return;
 	if (P_LEN <= CELL)
 	{
-		wux hlen = P_LEN/2;
+		unsigned long hlen = P_LEN/2;
 		wbbi(path, P_IND, P_LEN, rbbi(path, P_IND, hlen) | (rbbi(path, P_IND + hlen, hlen) << hlen));
 		return;
 	}
@@ -286,13 +291,13 @@ pvx swaps(Path path)
 	}
 }
 
-pvx later(Path path)
+static void later(Path path)
 {
 	if (algn(path) || (PR_LEV >= 4))	P_IND += P_LEN;
 	else								merge(path);
 }
 
-pvx merge(Path path)
+static void merge(Path path)
 {
 	levlim(7)
 	if (P_LEN < P_ALC)
@@ -304,11 +309,15 @@ pvx merge(Path path)
 	else
 	{
 		if (P_OWNER != NULL)
+		{
 			P_WRITTEN = P_OWNER;
+			(P_WRITTEN -> sel_length) = 1;
+			(P_WRITTEN -> sel_index) = 1;
+		}
 	}
 }
 
-pvx sifts(Path path)
+static void sifts(Path path)
 {
 	int l = P_IND;
 	levlim(5)
@@ -325,7 +334,7 @@ pvx sifts(Path path)
 	}
 }
 
-static wei command = 0;
+static unsigned char command = 0;
 static int doloop = 1;
 
 static void(*functions[16])(Path) = \
@@ -336,7 +345,7 @@ static void(*functions[16])(Path) = \
 
 void execs(Path path, Path caller)
 {
-	wux tempNum1 = 0;
+	unsigned long tempNum1 = 0;
 	levlim(8)
 	floor++;
 	P_RUNNING = path;
@@ -352,6 +361,7 @@ void execs(Path path, Path caller)
 	(*(*path).child).owner = path;
 	P_WRITTEN = P_CHILD;
 	P_PIND = (P_IND / 4);
+	startpos = P_PIND;
 	/* Execs Loop */
 	for (; doloop && P_PIND < (P_ALC / 4); P_PIND++)
 	{
@@ -389,12 +399,6 @@ void execs(Path path, Path caller)
 		*/
 		verp("\n");
 	}
-	if (!doloop)
-	{
-		vrx printf("Freed %d bytes.\n\n", sizeof(*P_CHILD));
-		free(P_CHILD);
-		doloop = 1;
-	}
 	if (caller == NULL)
 	{
 		verp("Top-level program terminated.")
@@ -402,21 +406,26 @@ void execs(Path path, Path caller)
 	}
 	else
 	{
+		if (!doloop)
+		{
+			vrx printf("Freed %d bytes.\n\n", sizeof(*P_CHILD));
+			free(P_CHILD);
+			doloop = 1;
+		}
 		P_RUNNING = caller;
 		P_WRITTEN = caller -> child;
 	}
-
 	floor--;
 	return;
 }
 
-pvx delev(Path path)
+static void delev(Path path)
 {
 	if (PR_LEV > 0)
 		PR_LEV--;
 }
 
-pvx equal(Path path)
+static void equal(Path path)
 {
 	levlim(5)
 	if (rbbi(path, P_IND, 1) ^ rbbi(path, P_IND + P_LEN - 1, 1))
@@ -425,7 +434,7 @@ pvx equal(Path path)
 		verp("EQUAL");
 }
 
-pvx halve(Path path)
+static void halve(Path path)
 {
 	levlim(7)
 	if (P_LEN > 1)
@@ -439,14 +448,14 @@ pvx halve(Path path)
 	(P_WRITTEN -> sel_length) = (P_WRITTEN -> prg_allocbits);
 }
 
-pvx uplev(Path path)
+static void uplev(Path path)
 {
 	levlim(9)
 	PR_LEV++;
-	(P_RUNNING -> prg_index) = 0;
+	(P_RUNNING -> prg_index) = startpos - 1;
 }
 
-pvx reads(Path path)
+static void reads(Path path)
 {
 	long pos = P_IND;
 	levlim(6)
@@ -460,7 +469,7 @@ pvx reads(Path path)
 		putchar(rbbi(path, pos, 8));
 } 
 
-pvx dealc(Path path)
+static void dealc(Path path)
 {
 	levlim(2)
 	if (P_ALC == 1)
@@ -468,7 +477,7 @@ pvx dealc(Path path)
 		int report = rbbi(path, 0, 1);
 		if ((P_RUNNING -> owner) != NULL)
 		{
-			wux ownind = ((P_RUNNING -> owner) -> prg_index);
+			unsigned long ownind = ((P_RUNNING -> owner) -> prg_index);
 			vrx printf("Terminating program from position %x with value %x", ownind, report);
 			wbbi(P_RUNNING -> owner, (ownind) * 4, 4, report);
 		}
@@ -481,11 +490,11 @@ pvx dealc(Path path)
 		P_IND -= P_ALC;
 }
 
-pvx split(Path path)
+static void split(Path path)
 {
 	if (PR_LEV < 1)
 	{
-		wan len = P_LEN;
+		unsigned int len = P_LEN;
 		if (len == 1)
 		{
 			if (P_CHILD == NULL)
@@ -503,8 +512,8 @@ pvx split(Path path)
 		}
 		else
 		{
-			wan leftIndex = (P_IND / CELL);
-			wan rightIndex = leftIndex + (len / CELL) - 1;
+			unsigned int leftIndex = (P_IND / CELL);
+			unsigned int rightIndex = leftIndex + (len / CELL) - 1;
 			while (leftIndex < rightIndex)
 			{
 				P_DATA[leftIndex++] = 0xFFFFFFFF;
@@ -515,7 +524,7 @@ pvx split(Path path)
 	halve(path);
 }
 
-pvx polar(Path path)
+static void polar(Path path)
 {
 	levlim(3)
 	if (!(rbbi(path, P_IND, 1) && !rbbi(path, P_IND + P_LEN - 1, 1)))
@@ -524,7 +533,7 @@ pvx polar(Path path)
 		verp("POLAR");
 }
 
-pvx doalc(Path path)
+static void doalc(Path path)
 {
 	levlim(1)
 	if (P_ALC >= MAX_BIT_SIZE)
@@ -536,7 +545,7 @@ pvx doalc(Path path)
 	merge(path);
 }
 
-pvx input(Path path)
+static void input(Path path)
 {
 	int i = P_IND;
 	levlim(6)
@@ -554,18 +563,18 @@ char algn(Path path)
 	return P_IND % (P_LEN << 1) == 0;
 }
 
-wux mask(int length) 
+unsigned long mask(int length) 
 {
 	if (length < CELL)	return ((int)1 << length) - 1;
 	else			 	return 0xFFFFFFFF;
 } 
 
-wux rbbi(Path path, wux i, wux len)
+unsigned long rbbi(Path path, unsigned long i, unsigned long len)
 {
 	return (P_DATA[i / CELL] >> (CELL - (i % CELL) - len)) & mask(len);
 }
 
-pvx wbbi(Path path, wux i, wux len, wux write)
+static void wbbi(Path path, unsigned long i, unsigned long len, unsigned long write)
 {
 	int shift = CELL - (i % CELL) - len;
 	if (len > CELL) abort();
@@ -573,7 +582,7 @@ pvx wbbi(Path path, wux i, wux len, wux write)
 	P_DATA[i / CELL] |= ((write & mask(len)) << shift);
 }
 
-pvx bin_print(Path path)
+static void bin_print(Path path)
 {
 	long i = 0;
 	String out;
@@ -590,7 +599,7 @@ pvx bin_print(Path path)
 	}
 }
 
-pvx skip()
+static void skip()
 {
 	if (P_RUNNING == NULL) return;
 	verp("SKIP");

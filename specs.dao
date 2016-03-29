@@ -1,32 +1,32 @@
-@HEX	BIN		SYM		NAME	MAKE		PALINDROME	EQUAL	POLAR
-0		0000	.  	@IDLES	$[]!S		Y			Y				
-1		0001	!  	@SWAPS	[[]!]!									
-2		0010	/  	@LATER	[[]]!					Y				
-3		0011	]) 	@MERGE	[]!										
-4		0100	%  	@SIFTS	[[]!]					Y				
-5		0101	#  	@EXECS	[[]!/[]!]	Y							
-6		0110	>  	@DELEV	[[]!/[]]				Y				
-7		0111	=  	@EQUAL	[/[]!]!									
-8		1000	(  	@HALVE	[[]!]							Y		
-9		1001	<  	@UPLEV	[[]/[]!]				Y				
-A		1010	:  	@READS	[[]/[]]		Y					Y		
-B		1011	S  	@DEALC	[/[]]!          		Y				
-C		1100	[  	@SPLIT	[]								Y		
-D		1101	*  	@POLAR	[/[]!]          		Y				
-E		1110	$  	@DOALC	[/[]]							Y		
-F		1111	;  	@INPUT	$[]S		Y			Y				
+@HEX	BIN		SYM		NAME	MAKE		PALINDROMIC	EQUAL	POLAR
+0		0000	.  		IDLES	$[]!S		Y			Y				
+1		0001	!  		SWAPS	[[]!]!									
+2		0010	/  		LATER	[[]]!					Y				
+3		0011	]) 		MERGE	[]!										
+4		0100	%  		SIFTS	[[]!]					Y				
+5		0101	#  		EXECS	[[]!/[]!]	Y							
+6		0110	>  		DELEV	[[]!/[]]				Y				
+7		0111	=  		EQUAL	[/[]!]!									
+8		1000	(  		HALVE	[[]!]							Y		
+9		1001	<  		UPLEV	[[]/[]!]				Y				
+A		1010	:  		READS	[[]/[]]		Y					Y		
+B		1011	S  		DEALC	[/[]]!          		Y				
+C		1100	[  		SPLIT	[]								Y		
+D		1101	*  		POLAR	[/[]!]          		Y				
+E		1110	$  		DOALC	[/[]]							Y		
+F		1111	;  		INPUT	$[]S		Y			Y				
 
-	LEVEL
+LEVEL TABLE (Behavior of symbols at different levels)
 0	. ! / ) % # > = ( < : S [ * $ ;
 1	. ! / ) % # > = ( < : S ( * . ;
 2	. . / ) % # > = ( < : . ( * . ;
 3	. . / ) % # > = ( < : . ( . . ;
-4	. . \ ) % # > = ( < : . ( . . ;
+4	. . \ ) % # > = ( < : . ( . . ;	'\' indicates plain linear traversal
 5	. . \ ) . # > . ( < : . ( . . ;
 6	. . \ ) . # > . ( < . . ( . . .
 7	. . \ . . # > . . < . . . . . .
 8	. . \ . . . > . . < . . . . . .
-8	. . \ . . . . . . < . . . . . .
+9	. . \ . . . > . . . . . . . . .
 
 @ IDLES:
 @ 	Does nothing.
@@ -139,3 +139,5 @@ F		1111	;  	@INPUT	$[]S		Y			Y
 @ 
 @ When the hex code is run, the program feeds in the bits to a data array 
 @ 	and calls EXECS on the array, as a top level program.
+
+. IDLES, ! SWAPS, / LATER, ]) MERGE, % SIFTS, # EXECS, > DELEV, = EQUAL, ( HALVE, < UPLEV, : READS, S DEALC, [ SPLIT, * POLAR, $ DOALC, ; INPUT

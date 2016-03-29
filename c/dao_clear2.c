@@ -381,12 +381,6 @@ void execs(Path path, Path caller)
 		*/
 		verp("\n");
 	}
-	if (!doloop)
-	{
-		vrx printf("Freed %d bytes.\n\n", sizeof(*P_CHILD));
-		free(P_CHILD);
-		doloop = 1;
-	}
 	if (caller == NULL)
 	{
 		verp("Top-level program terminated.")
@@ -394,10 +388,15 @@ void execs(Path path, Path caller)
 	}
 	else
 	{
+		if (!doloop)
+		{
+			vrx printf("Freed %d bytes.\n\n", sizeof(*P_CHILD));
+			free(P_CHILD);
+			doloop = 1;
+		}
 		P_RUNNING = caller;
 		P_WRITTEN = caller -> child;
 	}
-
 	floor--;
 	return;
 }
