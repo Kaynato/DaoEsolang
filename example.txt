@@ -1,0 +1,39 @@
+Example
+
+Program:
+
+$   $    $   [    [   #    )   )
+11101110 11101100 11000101 00110011
+
+Program calls EXECS on this data.
+Following "selection" of program data represents only the program pointer.
+
+1110iiio iiioiioo iioooioi ooiiooii : (initialized)
+0
+
+1110iiio iiioiioo iioooioi ooiiooii : $
+00
+
+iiio1110 iiioiioo iioooioi ooiiooii : $
+0000
+
+iiioiiio 1110iioo iioooioi ooiiooii : $
+00000000
+
+iiioiiio iiio1100 iioooioi ooiiooii : [
+1111oooo
+
+iiioiiio iiioiioo 1100oioi ooiiooii : [
+11oooooo
+
+iiioiiio iiioiioo iioo0101 ooiiooii : #
+1100oooo (initialized - selection now program pointer)
+0
+
+iiioiiio iiioiioo iioo0101 ooiiooii : (#)
+1100oooo                            : [
+0 (nothing, however, happens)
+
+
+
+
