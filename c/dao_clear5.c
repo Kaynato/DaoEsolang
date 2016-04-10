@@ -26,11 +26,6 @@
 
 #define FILE_SYMBOLIC ".dao"
 #define FILE_COMPILED ".wuwei"
-#define DEFAULT_INTERPRET_CELL_LENGTH 32
-
-#define BITS_IN_BYTE	8
-#define BITS_IN_CELL 	(sizeof(unsigned long) * 8)
-#define BYTE_MASK		0xff
 
 typedef FILE* File;
 typedef char* String;
@@ -39,6 +34,7 @@ typedef struct PATH* Path;
 static void prompt();
 static void compile(File, File, String);
 static void interpret(String);
+
 
 static void swaps(Path), later(Path), merge(Path), sifts(Path), delev(Path), equal(Path), halve(Path);
 static void uplev(Path), reads(Path), dealc(Path), split(Path), polar(Path), doalc(Path), input(Path), execs(Path, Path);
@@ -56,20 +52,11 @@ static void		skip();
 static void 	flags();
 static void 	splash();
 static void		bin_print(Path);
-static void		diagnose(Path, unsigned char);
 static void 	wbbi(Path, unsigned long, unsigned long, unsigned long);
 unsigned char 	getNybble(char);
 unsigned long 	rbbi(Path, unsigned long, unsigned long);
 unsigned long 	mask(int);
 
-static unsigned char command = 0;
-static int doloop = 1;
-
-static void(*functions[16])(Path) = \
-{NULL, swaps, later, merge, \
-sifts, NULL, delev, equal, \
-halve, uplev, reads, dealc, \
-split, polar, doalc, input};
 
 struct PATH
 {
@@ -329,9 +316,6 @@ static void interpret(String inputFileName)
 
 #define arg_is(i, a) (!strcmp(parsed[i], a))
 static unsigned char hasExtension(String);
-static int  		 parsePosInt(String, unsigned int);
-static void 		 rad_print(Path, unsigned int);
-static void			 flag(String*, int);
 
 static void prompt()
 {
@@ -372,9 +356,13 @@ static void prompt()
 				else
 				{
 					if (arg_is(1, "help"))
+					{
 						printf("Use: help [command] to see detailed information.\n");
+					}
 					if (arg_is(1, "quit"))
+					{
 						printf("\tExits the program.\n");
+					}
 					if (arg_is(1, "flag"))
 					{
 						printf("\tSet flags.\n");
@@ -407,7 +395,28 @@ static void prompt()
 			}
 			/*************************************************** FLAG OPTION CASE ***************************************************/
 			else if (arg_is(0, "flag") || arg_is(0, "flags") || arg_is(0, "f"))
-				flag(parsed, ac);
+			{
+				int i = 1;
+				/* We want the format: -flag ON/OFF */
+				for (; i < ac; i++)
+				{
+					if (is_option(parsed[i]))							/* This one sets a flag - so we should advance i right here and now.*/
+					{
+						if (++i < ac) 																		/* Ensure it's still in bounds  */
+						{
+							if (arg_is(i, "ON") || arg_is(i, "OFF")) 										/* Next input is correct form   */
+							{
+								set_option(parsed[i-1], strcmp(parsed[i], "OFF")); 							/* Set option correctly. 		*/
+								printf("Set option -%c to %d.\n", parsed[i-1][1], strcmp(parsed[i], "OFF"));
+							}
+							else																  			/* Incorrect form 				*/
+								printf("Syntax error: Expected \"OFF\" or \"ON\" after flag assignment -%c.\n", parsed[i-1][1]);
+						}
+						else
+							printf("Syntax error: Expected \"OFF\" or \"ON\" after flag assignment -%c.\n", parsed[i-1][1]);
+					}
+				}
+			}
 			/***************************************************  RUN OPTION CASE ***************************************************/
 			else if (arg_is(0, "run") || arg_is(0, "r"))
 			{
@@ -498,35 +507,15 @@ static void prompt()
 			/**************************************************** NEW OPTION CASE ***************************************************/
 			else if (arg_is(0, "new") || arg_is(0, "`") || arg_is(0, ">") || arg_is(0, ">>") || arg_is(0, "n"))
 			{
-				unsigned char activeinterpret = 1;								/* Loop control 									*/
+				unsigned char activeinterpret = 1;
 				struct PATH newpath = NEW_PATH;									/* Initialize path with initialization values.		*/
-				Path TLP = &newpath;											/* Use the correct format (a pointer)				*/
-
+				Path dao = &newpath;											/* Use the correct format (a pointer)				*/
+				
 				printf("\tCODE MODE INITIALIZED\n");
-				printf("\tWarning: This mode is not recommended. It is safer to write .dao files.\n");
-				printf("\tPrograms may crash for various reasons if initialized through code mode.\n");
-				printf("\tIt is also impractical to retrieve stored programs through this mode.\n");
 
-				P_RUNNING = TLP;												/* Set running 										*/
-
-				if (((TLP -> child) = (calloc(1, sizeof(struct PATH)))) == NULL)/* Allocate memory space 							*/
-				{																/* Cover error case							 		*/
-					printf("FATAL ERROR: Unable to allocate memory.");
-					return;
-				}
-
-				vrx printf("Allocated %d bytes.\n\n", sizeof(*(TLP -> child)));
-
-				memcpy((TLP -> child), &NEW_PATH, sizeof(struct PATH));			/* Copy over initialization data			 		*/
-				((TLP -> child) -> owner) = TLP;								/* Set owner of this new Path 						*/
-				((TLP -> child) -> prg_floor) = (TLP -> prg_floor) + 1;			/* Set floor of this new Path 						*/
-				((TLP -> child) -> prg_data) = calloc(1, sizeof(unsigned long));/* Set data  of this new Path 						*/
-				P_WRITTEN = (TLP -> child);										/* Set this as written on 							*/
-
-				(TLP -> prg_allocbits) = BITS_IN_CELL;
-				if (((TLP->prg_data) = calloc(DEFAULT_INTERPRET_CELL_LENGTH, sizeof(unsigned long))) == NULL)	/* Allocate data space 	*/
+				if (((dao->prg_data) = calloc(1, sizeof(unsigned long))) == NULL)					/* Allocate single-byte data.						*/
 				{
-					printf("Error allocating %d bytes", DEFAULT_INTERPRET_CELL_LENGTH * sizeof(unsigned long));
+					printf("Error allocating %d bytes", sizeof(unsigned long));
 					perror("");
 					return;
 				}
@@ -541,18 +530,19 @@ static void prompt()
 					/* Inputs to care about: 
 						:: new
 							enter code mode, makes a path
+			
 							non-tilded things will be taken as code
+							
 							> ~kill / ~quit
 								abort execution
 							> ~what / print / show [x]
 								prints out path in base-x
 								default is binary (2) if small enough, hex if bigger. use bin_print.
-							> ~flag(s)
-								same deal
 							> @heaven / above / up / higher / high
 								path above current path
 							> @earth / under / down / lower / low
 								path below current path
+			
 					*/
 
 					/* Any args inputted */
@@ -562,37 +552,39 @@ static void prompt()
 						{
 							/* help */
 							printf("\tUse: help [command] for more information.\n");
-							printf("\t\tExample: help ~end\n\n");
+							printf("\t\tExample: help ~end\n");
+							printf("\t\t\n");
 							printf("\t\t~end : terminate program and exit immediate interpretation\n");
 							printf("\t\t~print <~path> <x> : print out a representation of the path in base x numerals.\n");
 							printf("\t\t\tDefault path is current.\n");
 							printf("\t\t\tDefault base is automatically determined.\n");
 							printf("\t\t@above : keyword for the above path. Can be chained. Causes error if nonexistent.\n");
-							printf("\t\t@below : keyword for the below path. Can be chained. Causes error if nonexistent.\n\n");
+							printf("\t\t@below : keyword for the below path. Can be chained. Causes error if nonexistent.\n");
+							printf("\t\t\n");
 							printf("\t\tAny other input is taken as code to be immediately loaded into and executed from the top-level program.\n");
 						}
 						if (parsed[0][0] == '~')
 						{
 							if (arg_is(0, "~end") || arg_is(0, "~quit") || arg_is(0, "~q") || arg_is(0, "~kill") || arg_is(0, "~exit"))
+							{
 								activeinterpret = 0;
-							else if (arg_is(0, "~flag") || arg_is(0, "~flags") || arg_is(0, "~f"))
-								flag(parsed, ac);
+							}
 							else if (arg_is(0, "~print") || arg_is(0, "~what") || arg_is(0, "~show"))
 							{
 								/* Check if there is a keyword combination and then check for an indication of base. */
 								int i = 1;
-
-								/* 0: autobase. Other: base. Negative: error */
-								int base = 0;
+								/* 0: autobase. Other: base */
+								unsigned int base = 0;
 
 								/* 0: Keyword det. 1: Base det. -1: Nonexistent path. */
 								char portion = 0;
 
 								/* Default. */
-								Path pathToPrint = TLP;
+								Path pathToPrint = dao;
 
 								/* Advance pointer across args to determine keyword */
 								while (i < ac && portion == 0)
+								{
 									/* Is keyword */
 									if (arg_is(i, "@above") || arg_is(i, "@below"))
 									{
@@ -607,111 +599,47 @@ static void prompt()
 									/* Is not keyword: Kicks out of loop via portion */
 									else
 										portion = 1;
+								}
+
 								/* If the path exists */
 								if (portion != -1)
 								{
-									/* More args after keywords */
+									/* And we finished keywords via finding something else*/
 									if (portion == 1)
 									{
 										/* Parse int of parsed[i]. Is it even a number? */
-										base = parsePosInt(parsed[i], 36);
-										/* Incorrect format */
-										if (base == -1)
-										{
-											printf("%s is not a valid positive integer. Reverting to default.\n", parsed[i]);
-											base = 0;
-										}
 									}
-									/* For the default base, set it according to the allocbits */
-									if (base == 0)
-										base = ((TLP -> prg_allocbits) > 32) ? 16 : 2;
+
 									/* Then with base set, we can go and print accordingly */
-									rad_print(pathToPrint, (unsigned int)base);
-									putchar('\n');
+
 								}
-								else
-									printf("PRINT ERROR: Such a path does not exist.\n");
+
 							}
 						}
 						else
 						{
 							/* Code for immediate interpretation */
-							int i = 0;
-							int j = 0;
-							int lim = 0;
-							/* For each arg (why would you space them though come on */
-							for (; i < ac; i++)
-							{
-								/* For each character */
-								for (j = 0, lim = strlen(parsed[i]); j < lim; j++)
-								{
-									command = getNybble(parsed[i][j]);
-									/* Insert parsed symbol into the Top level program */
-									wbbi(TLP, (TLP -> prg_index), 4, command);
-									/* Increase size if necessary */
-									if ((TLP -> prg_index) > (TLP -> prg_allocbits))
-										doalc(TLP);
-
-									/* DEALC condition through this is a problem. */
-
-									if (command == 5)
-										execs(P_WRITTEN, P_RUNNING);
-									else if (command != 0)
-										functions[command](P_WRITTEN);
-
-									if (doloop)
-									{
-										vrx diagnose(P_RUNNING, command);
-										verp("\n")
-									}
-									else
-									{
-										vrx printf("Freed %d bytes.\n\n", sizeof(*P_WRITTEN));
-										free(P_WRITTEN);
-									}
-								}
-							}
 						}
+
+
+
+
 					}
+
+
+
 					freeparsedargs(parsed);
 				}
-				/* Deallocate the paths involved to avoid a memory leak!! */
-				free((TLP -> child));
 			}
 			/************************************************** INVALID OPTION CASE *************************************************/
 			else
 				printf("%s is not a recognized or valid option.\n", parsed[0]);
-		}
-	}
-	freeparsedargs(parsed);
-}
 
-static void	flag(String* parsed, int ac)
-{
-	int i = 1;
-	/* We want the format: -flag ON/OFF */
-	for (; i < ac; i++)
-	{
-		if (is_option(parsed[i]))							/* This one sets a flag - so we should advance i right here and now.*/
-		{
-			if (++i < ac) 																		/* Ensure it's still in bounds  */
-			{
-				if (arg_is(i, "ON") || arg_is(i, "OFF")) 										/* Next input is correct form   */
-				{
-					set_option(parsed[i-1], strcmp(parsed[i], "OFF")); 							/* Set option correctly. 		*/
-					printf("Set option -%c to %d.\n", parsed[i-1][1], strcmp(parsed[i], "OFF"));
-				}
-				else																  			/* Incorrect form 				*/
-					printf("Syntax error: Expected \"OFF\" or \"ON\" after flag assignment -%c.\n", parsed[i-1][1]);
-			}
-			else
-				printf("Syntax error: Expected \"OFF\" or \"ON\" after flag assignment -%c.\n", parsed[i-1][1]);
 		}
-		else
-			printf("%s is an invalid option.\n", parsed[i]);
+		
 	}
-	if (i == 1)
-		printf("Flag assignment expected. Use -<flag> ON/OFF.\n");
+
+	freeparsedargs(parsed);
 }
 
 static unsigned char hasExtension(String input)
@@ -721,27 +649,8 @@ static unsigned char hasExtension(String input)
 	for (; i < length; i++)
 		if (input[i] == '.')
 			return 1;
-	return 0;
-}
 
-static int parsePosInt(String input, unsigned int max)
-{
-	unsigned int i = 0;
-	unsigned int out = 0;
-	unsigned int len = strlen(input);
-	char val = 0;
-	for (; i < len; i++)
-	{
-		out *= 10;
-		val = input[i] - '0';
-		if (val >= 0 && val < 10)
-			out += val;
-		else
-			return -1;
-		if (out > max)
-			return max;
-	}
-	return out;
+	return 0;
 }
 
 static int setargs(char *args, char **argv)
@@ -885,6 +794,10 @@ char* l_to_str(unsigned long val, unsigned char len, unsigned char radix)
 	return &buf[2 + (32 - len)];
 }
 
+#define BITS_IN_BYTE	8
+#define BITS_IN_CELL 	(sizeof(unsigned long) * 8)
+#define BYTE_MASK		0xff
+
 void flip_UL(unsigned long* target)									/* Generalize this sometime, ok? */
 {
 	unsigned long num = *target;
@@ -981,18 +894,30 @@ static void sifts(Path path)
 		}
 }
 
-static void execs(Path path, Path caller)
+static unsigned char command = 0;
+static int doloop = 1;
+
+static void(*functions[16])(Path) = \
+{NULL, swaps, later, merge, \
+sifts, NULL, delev, equal, \
+halve, uplev, reads, dealc, \
+split, polar, doalc, input};
+
+void execs(Path path, Path caller)
 {
 	/***************************************************************EXECUTION LOOP***************************************************************/
 	unsigned long tempNum1 = 0;																/* Expedite calculation								*/
 	levlim(8)																				/* Level operation checking							*/
-	P_RUNNING = path;																		/* Set running 										*/
+		P_RUNNING = path;																	/* Set running 										*/
+
 	if ((P_CHILD = (calloc(1, sizeof(struct PATH)))) == NULL)								/* Allocate memory space 							*/
 	{																						/* Cover error case							 		*/
 		printf("FATAL ERROR: Unable to allocate memory.");
 		return;
 	}
+
 	vrx printf("Allocated %d bytes.\n\n", sizeof(*P_CHILD));
+
 	memcpy(P_CHILD, &NEW_PATH, sizeof(struct PATH));										/* Copy over initialization data			 		*/
 	(*(*path).child).owner = path;															/* Set owner of this new Path 						*/
 	(*(*path).child).prg_floor = (path->prg_floor) + 1;										/* Set floor of this new Path 						*/
@@ -1005,14 +930,17 @@ static void execs(Path path, Path caller)
 	for (; doloop && P_PIND < (P_ALC / 4); P_PIND++)										/* Execution Loop 									*/
 	{
 		tempNum1 = (P_RUNNING->prg_index);
-		command = ((P_RUNNING->prg_data)[(tempNum1 * 4) / 32] >> (32 - ((tempNum1 * 4) % 32) - 4)) & mask(4);	/* Calculate command			*/
-		vrx diagnose(path, command);
-		
-		if (command == 5)
-			execs(P_WRITTEN, path);
-		else if (command != 0)
-			functions[command](P_WRITTEN);
-
+		command = ((P_RUNNING->prg_data)[(tempNum1 * 4) / 32] >> (32 - ((tempNum1 * 4) % 32) - 4)) & mask(4);	/* Calculate command				*/
+		vrx
+		{
+			printf("%s R%d W%d L%d %c ", l_to_str(P_PIND, 5, 16), (P_RUNNING->prg_floor), (P_WRITTEN->prg_floor), PR_LEV, getChar(command));
+		if (!HIDE_DATA) bin_print(P_WRITTEN);
+		printf(" : ");
+		}
+			if (command == 5)
+				execs(P_WRITTEN, path);
+			else if (command != 0)
+				functions[command](P_WRITTEN);
 		/*
 		switch(command)
 		{
@@ -1104,20 +1032,20 @@ static void reads(Path path)
 static void dealc(Path path)
 {
 	levlim(2)
-	if (P_ALC == 1)
-	{
-		int report = rbbi(path, 0, 1);
-		if ((P_RUNNING->owner) != NULL)
+		if (P_ALC == 1)
 		{
-			unsigned long ownind = ((P_RUNNING->owner)->prg_index);
-			vrx printf("Terminating program from position %x with value %x", ownind, report);
-			wbbi(P_RUNNING->owner, (ownind) * 4, 4, report);
+			int report = rbbi(path, 0, 1);
+			if ((P_RUNNING->owner) != NULL)
+			{
+				unsigned long ownind = ((P_RUNNING->owner)->prg_index);
+				vrx printf("Terminating program from position %x with value %x", ownind, report);
+				wbbi(P_RUNNING->owner, (ownind) * 4, 4, report);
+			}
+			free(P_DATA);
+			P_DATA = NULL;
+			doloop = 0;
+			return;
 		}
-		free(P_DATA);
-		P_DATA = NULL;
-		doloop = 0;
-		return;
-	}
 	P_ALC >>= 1;
 	if (P_ALC <= 8)
 		realloc(P_DATA, 1);
@@ -1258,7 +1186,7 @@ static void wbbi(Path path, unsigned long i, unsigned long len, unsigned long wr
 
 static void bin_print(Path path)
 {
-	unsigned long i = 0;
+	long i = 0;
 	String out;
 	if (P_ALC <= BITS_IN_CELL)
 	{
@@ -1273,38 +1201,9 @@ static void bin_print(Path path)
 	}
 }
 
-static void rad_print(Path path, unsigned int radix)
-{
-	unsigned long i = 0;
-	unsigned char len = 0;
-	String out;
-	for (; radix >> len != 0; len++);
-	len = 32 / len;
-	if (P_ALC <= BITS_IN_CELL)
-	{
-		out = l_to_str(rbbi(path, 0, P_ALC), 32, 2);
-		printf("%s", &out[strlen(out) - P_ALC]);
-	}
-	while (i < (P_ALC / BITS_IN_CELL))
-	{
-		out = l_to_str(P_DATA[i], len, radix);
-		printf("%s", out);
-		if (i++ < (P_ALC / BITS_IN_CELL))
-			putchar(' ');
-	}
-}
-
 static void skip()
 {
 	if (P_RUNNING == NULL) return;
 	verp("SKIP");
 	(P_RUNNING->prg_index)++;
-}
-
-static void diagnose(Path path, unsigned char command)
-{
-	printf("%s R%d W%d L%d %c ", l_to_str(P_PIND, 5, 16), (P_RUNNING->prg_floor), (P_WRITTEN->prg_floor), PR_LEV, getChar(command));
-	if (!HIDE_DATA)
-		bin_print(P_WRITTEN);
-	printf(" : ");
 }

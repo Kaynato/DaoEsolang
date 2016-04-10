@@ -14,7 +14,7 @@
 */
 
 /*
-* DaoLanguage / Daoyu Compiler and Interpreter ONLY.
+* DaoLanguage / Daoyu Compiler and Interpreter.
 * Zicheng Gao - 2016
 * See splash() for details.
 */
@@ -25,6 +25,7 @@
 
 #define FILE_SYMBOLIC ".dao"
 #define FILE_COMPILED ".wuwei"
+#define MAX_BIT_SIZE (unsigned long)(1 << 17)
 
 typedef struct PATH* Path;
 typedef FILE* File;
@@ -228,7 +229,7 @@ int main(int argc, char * argv[])
 }
 
 static void splash()
-{
+{	
 	printf("\t\t#################################\n");
 	printf("\t\t##############     ##############\n");
 	printf("\t\t#########     #####     #########\n");

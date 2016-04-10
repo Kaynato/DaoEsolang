@@ -1,0 +1,29 @@
+@ Bit copy
+
+@ 00 10
+
+@ Input the single bit.
+;
+@ Two possibilities...
+@ 0 1
+
+@ Allocate the second bit
+$
+
+@ 00 10
+
+@ Now to copy the bit.
+@ 00   10
+$
+@ 0000 1000
+*[
+@ 0000 11oo
+(
+@ 00oo 1ioo
+(
+@ 0ooo 1ioo
+))
+@ 0000 1100
+S
+@ 00   11
+@ And finished.

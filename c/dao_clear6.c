@@ -671,18 +671,34 @@ static void prompt()
 									}
 								}
 							}
+
+
+
 						}
+
+
+
+
 					}
+
+
+
 					freeparsedargs(parsed);
 				}
+
 				/* Deallocate the paths involved to avoid a memory leak!! */
 				free((TLP -> child));
+
+
 			}
 			/************************************************** INVALID OPTION CASE *************************************************/
 			else
 				printf("%s is not a recognized or valid option.\n", parsed[0]);
+
 		}
+		
 	}
+
 	freeparsedargs(parsed);
 }
 
