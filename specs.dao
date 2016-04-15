@@ -18,7 +18,7 @@ F		1111	;  		INPUT	$[]S		Y			Y
 
 LEVEL TABLE (Behavior of symbols at different levels)
 0	. ! / ) % # > = ( < : S [ * $ ;
-1	. ! / ) % # > = ( < : S ( * . ;
+1	. . / ) % # > = ( < : S ( * . ;
 2	. . / ) % # > = ( < : . ( * . ;
 3	. . / ) % # > = ( < : . ( . . ;
 4	. . \ ) % # > = ( < : . ( . . ;	'\' indicates plain linear traversal
@@ -101,7 +101,8 @@ LEVEL TABLE (Behavior of symbols at different levels)
 @ DEALC
 @ 	If total > 1
 @ 		Halve total program length
-@ 		HALVE
+@ 		if selection is more than one bit
+@			HALVE
 @ 		(if the selection is in the right side, 
 @ 		 just move it to the left by total/2 bits)
 @ 	Otherwise

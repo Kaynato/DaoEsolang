@@ -1,0 +1,344 @@
+99 Bottles of Beer on the wall
+
+This will be the cause of great regret, won't it?
+
+GENERALIZED STRUCTURE:
+
+[init size][init harmless unary counter] > ... [DO STUFF][BUILD PROGRAM][NAVIGATE][CONDITIONAL]# xN  ... [NAVIGATE TO TERMINATION CONDITION][ANTI-CONDITIONAL] < [end] ...buffer... [data]
+[input area] ...buffer... [harmless unary counter] ( {to prevent / from screwing things up} ...buffer... [PROGRAM RESERVED]
+0 (jump-off point)
+
+Impl for 99bottles:
+  Layer2:
+  [0] 0 [99 states] ( buf [PR]
+  [99 states] ( buf [PR]
+  [33x {4 bits for 3 states}] ( buf [PR]
+
+  in bits [132][4][120] - 256 = $$$$ $$$$
+  in nybs [33][1][30]
+
+  Program space:
+
+  CCCC CCCC CCCC CCCC CCCC CCCC CCCC CCCC - 32n
+  CC(. ____ ____ ____ ____ ____ ____ ____ - 64n
+  PR__ ____ ____ ____ ____ ____ ____ ____
+  ____ ____ ____ ____ ____ ____ ____ ____ - 128n
+
+  ____ ____ ____ ____ ____ ____ ____ ____
+  ____ ____ ____ ____ ____ ____ ____ ____ - 128 + 64
+  ____ ____ ____ ____ ____ ____ ____ ____
+  ____ ____ ____ ____ ____ ____ ____ ____ - 256n
+
+  ____ ____ ____ ____ ____ ____ ____ ____
+  ____ ____ ____ ____ ____ ____ ____ ____ -
+  ____ ____ ____ ____ ____ ____ ____ ____
+  ____ ____ ____ ____ ____ ____ ____ ____ - 256 + 128
+  
+  ____ ____ ____ ____ ____ ____ ____ ____
+  ____ ____ ____ ____ ____ ____ ____ ____ -
+  ____ ____ ____ ____ ____ ____ ____ ____
+  ____ ____ ____ ____ ____ ____ ____ __PR - 512n
+
+2byte space - oct space
+CCCC CCCC CCCC CCCC - 16n
+CCCC CCCC CCCC CCCC - 32n
+CbPP PPPP PPPP PPPP - 
+PPPP PPPP PPPP PPPP - 64n
+
+
+[INIT SIZE] - 512n
+$$$$ $$$$ $$$
+
+navigate to end of the counter
+
+
+
+first 64n
+	(((
+second 32n
+	(/
+first 2n
+  ((((
+second n
+	(/
+set to 1000
+	[[]]
+first 2n
+	)
+second 2n
+	/
+3rd n
+	(
+set to 1000 - protective MERGE
+	[[]]
+	)
+)))))))))
+
+
+
+
+Canonical lyrics:
+__ bottles of beer on the wall,
+  __ bottles of beer,
+Take one down and pass it around,
+  __-1 bottles of beer on the wall
+
+626f 7474 6c65 7320 6f66 2062 6565
+7220 6f6e 2074 6865 2077 616c 6c2c
+0a
+626f 7474 6c65 7320 6f66 2062 6565
+722c 0a
+
+Ok, I'm kinda going loopy or something since the "program to build" will depend on the "size of the everything" because I need to navigate to the data in the built program
+It is best then to just give myself a more roomy estimate for the size of the entire program 
+
+
+
+
+STRUCTURE OF MAIN PROGRAM
+
+	SETUP		(128n)
+	SET_CTR 	(33x3 1)
+	BUILD 		(FRM)
+	LOOP:
+		UNROLL:
+			FOREACH N FROM 0 TO 99
+				ALTER	F1.sel_print1	(N)
+				ALTER	F1.sel_print2	(N)
+				ALTER	F1.sel_print3	(N-1)
+				ALTER	F1.decrement	(N-1)
+				NAVIGATE 				(N)
+				FOR N NOT 99
+					IF 						(CTR N)
+						EXECS
+				FOR N IS  99
+					IF						(CTR N)
+						SKIP
+	ENDLOOP
+	END
+				
+STRUCTURE OF F1 PROGRAM		
+				
+	JUMP
+	NAV NUM sel_print1
+	NAV TXT PRINT
+	NAV NUM sel_print2
+	NAV TXT PRINT
+	NAV NUM sel_print3
+	NAV TXT PRINT
+	NAV CTR decrement
+	RETURN
+	END	
+				
+
+
+
+
+
+findings: sel_print 		requires 24n reservation
+			print A or A' 	requires 3n
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+F 1
+
+JUMP UP TO W1
+)
+NAV NUM
+	we first select all the 512n block, requiring 9 doublings
+		)))) )))) )))
+  then we double again to jump to our TLP
+		)
+		then we must select an entire 4kN, requiring 14 doublings
+			)))) )))) )))) ))
+		then we LATER to the second 4kN
+			/
+		then we HALVE LATER four times to select the text block which is 256n
+			(/(/(/(/
+
+		NOW SELECTING TEXT BLOCK
+
+		then we will select the number block, which is the 4th quarter of the first 128n
+			select number block only
+				((/(/
+			then
+				sel_print1. the reserved space should be twice the largest one.
+
+				0: first tetrad of 32
+					( ( ( ( :))))
+				1: second tetrad of 32
+					( ( ( (/:))))
+				2:
+					( ( (/( :))))
+				3:
+					( ( (/(/:))))
+				4:
+					( (/( ( :))))
+				5:
+					( (/( (/:))))
+				6:
+					( (/(/( :))))
+				7:							most, at 12n, 13n for better sense
+					( (/(/(/:))))
+				8:
+					(/( ( ( :))))
+				9:
+					(/( ( (/:))))
+
+				thus we should reserve 26n for this space.
+
+			we are currently selecting the 32n NUMBER BLOCK.
+
+NAV TEXT PRINT 1
+
+in accordance with the appendix we will either navigate to A or A' whereupon we will print
+
+	select the entire first 128n block
+    ))
+	
+			select A'
+				((
+			or select A 				this space should reserve 3n
+				/((
+	print
+	  :
+	select entire 256n
+	  )))
+	select and print B, then select the number block
+	  (((/ : )/(/
+
+
+		26n for sel_print2
+
+	select first 128n block
+	  ))
+
+	now we have to either print AC or A'C
+
+
+			A'C version
+				select and print A'
+					((:) )
+				select and print C then select all 256n								reserve 16n
+					/(( /:) /:) )
+
+  		AC version
+				select entire second 128n block and rock on, then select all 256n
+					/:)
+
+						that is:
+								((:) )/(( /:)/ :))
+										  /:) 
+
+
+	then we have to select the number block
+
+		((/(/
+
+
+		26n for sel_print3
+
+	select the 128n first block
+		))
+
+		3n for either selecting A' or A
+
+
+	print
+		:
+	select 256n
+		)))
+	select and print B
+		(((/:
+
+
+	now we are selecting B which is 32n. we will go and select a single bit now.
+		(((((((
+	descend into F1 where the counter exists
+		(
+	select the first 64n where we have our counter
+		(((
+
+
+
+
+					DECR GOES HERE
+
+
+
+
+
+	we are now selecting the first 64n block
+
+	to select a single bit we require 8 halves
+		((((((((
+	then we descend into our single little bit and DEALC it
+		(S
+
+
+
+
+
+
+
+THUS F1 by itself
+
+())) )))) )))) ))))
+)))) )))) ))/( /(/(
+/(/( (/(/ (s(e (l(p
+:))) )(s( e(l( p:))
+
+)))) a((: )))( ((/: 
+)/(/ (s(e (l(p :)))
+)(s( e(l( p:)) )))) 
+a'a' a'a' /:)a a'a.
+
+((/( /.(s (e(l (p:)
+)))( s(e( l(p: ))))
+))a( (:)) )((( /:((
+(((( (((
+
+
+	DECR
+
+
+(((( (((( (S
+
+
+
+
+
+
+
+
+
+
+
+So to wit:
+With the stanzas like this:
+
+	X [  A  ][ B
+	B  ] X [  A  ][C
+		    C
+	C] X-1 [A-1][ D ]
+
+The data is like this:
+
+	[A'][B ][D ][N ]  - 128n
+	[A ][C   C   C ]  - 128n

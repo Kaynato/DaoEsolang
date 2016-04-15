@@ -1,0 +1,35 @@
+debugnotes
+
+in daox
+
+
+	another mode:
+
+		have a static PATH to store the previous values.
+			of written
+			of running
+	
+		have a function which compares current with past for
+				written
+				running
+
+			on values of
+				pointer
+
+
+			if they are not the same, call another function
+				dump the values and wait for user input
+	
+			before every actual function call, call this on the path.
+	
+	
+		have a global   var   "volatile" which deactivates that check
+			call when 
+
+
+
+	get rid of the weird EXECS overwrite thing
+
+		that functionality can be impl inside a daoyu program
+
+		check if it's the delegation of P_WRITTEN and P_RUNNING at the end of an EXECS that is causing trouble

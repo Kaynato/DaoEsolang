@@ -1,0 +1,9 @@
+@ F2 deletes F2 test
+
+@ We construct a program that constructs a program that goes to the top, back down again, and then deletes its only bit
+
+
+
+@ F1: with affordance for 32n in F1
+
+$$$$$$$((((([]!/[]!)/([]!/[]!))/(([]!/[]!)/([]!/[]!)))/((([]!/[]!)/([[]]/[[]]))/(([[]]/[[]])/([[]]/[[]]))))/[((([[]]/[[]])/([[]]/[[]]))/[[[/[]]!]])])#

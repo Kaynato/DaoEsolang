@@ -27,18 +27,29 @@
 #define FILE_SYMBOLIC ".dao"
 #define FILE_COMPILED ".wuwei"
 #define DEFAULT_INTERPRET_CELL_LENGTH 32
-
 #define BITS_IN_BYTE	8
 #define BITS_IN_CELL 	(sizeof(unsigned long) * 8)
 #define BYTE_MASK		0xff
 
-typedef FILE* File;
-typedef char* String;
-typedef struct PATH* Path;
+typedef struct PATH
+{
+	struct PATH*	owner;						/* OWNER      PROGRAM */
+	struct PATH*	child;						/* CHILD      PROGRAM */
+	unsigned long*	prg_data;					/*		   DATA	      */
+	unsigned long	prg_allocbits;				/* OPEN	   DATA   BITS*/
+	unsigned long	prg_index;					/* INSTRUCTION POINTER*/
+	unsigned char	prg_level;					/* OPERATING   LEVEL  */
+	unsigned long	sel_length;					/* LENGTH OF SELECTION*/
+	unsigned long	sel_index;					/* INDEX  OF SELECTION*/
+	unsigned int    prg_floor;					/* FLOOR  OF PATH     */
+	unsigned long   prg_start;					/* START  OF RUNNING  */
+} Pathstrx;
+
+typedef Pathstrx* Path;
 
 static void prompt();
-static void compile(File, File, String);
-static void interpret(String);
+static void compile(FILE*, FILE*, char*);
+static void interpret(char*);
 
 static void swaps(Path), later(Path), merge(Path), sifts(Path), delev(Path), equal(Path), halve(Path);
 static void uplev(Path), reads(Path), dealc(Path), split(Path), polar(Path), doalc(Path), input(Path), execs(Path, Path);
@@ -49,57 +60,46 @@ char 			algn(Path);
 char 			getChar(unsigned char);
 char*			bin(unsigned long);
 char*			str_dup(char *s);
-char*			set_option(String, char);
-char*			l_to_str(unsigned long, unsigned char, unsigned char);
+char*			set_option(char*, char);
+char*			l_to_str(unsigned long, unsigned char, unsigned char, unsigned char);
 char**			parsedargs(char *arguments, int *argc);
 static void		skip();
 static void 	flags();
 static void 	splash();
 static void		bin_print(Path);
 static void		diagnose(Path, unsigned char);
-static void 	wbbi(Path, unsigned long, unsigned long, unsigned long);
+static void 	write_by_bit_index(Path, unsigned long, unsigned long, unsigned long);
 unsigned char 	getNybble(char);
-unsigned long 	rbbi(Path, unsigned long, unsigned long);
+unsigned long 	read_by_bit_index(Path, unsigned long, unsigned long);
 unsigned long 	mask(int);
 
 static unsigned char command = 0;
 static int doloop = 1;
 
-static void(*functions[16])(Path) = \
-{NULL, swaps, later, merge, \
-sifts, NULL, delev, equal, \
-halve, uplev, reads, dealc, \
-split, polar, doalc, input};
+typedef void(*PathFunc)(Path);
 
-struct PATH
-{
-	Path 			owner;						/* OWNER      PROGRAM */
-	Path 			child;						/* CHILD      PROGRAM */
-	unsigned long*	prg_data;					/*		   DATA	      */
-	unsigned long	prg_allocbits;				/* OPEN	   DATA   BITS*/
-	unsigned long	prg_index;					/* INSTRUCTION POINTER*/
-	unsigned char	prg_level;					/* OPERATING   LEVEL  */
-	unsigned long	sel_length;					/* LENGTH OF SELECTION*/
-	unsigned long	sel_index;					/* INDEX  OF SELECTION*/
-	unsigned int    prg_floor;					/* FLOOR  OF PATH     */
-	unsigned long   prg_start;					/* START  OF RUNNING  */
-};
+static PathFunc functions[16] = \
+	{NULL, swaps, later, merge, \
+	sifts, NULL , delev, equal, \
+	halve, uplev, reads, dealc, \
+	split, polar, doalc, input};
 
 const struct PATH NEW_PATH = { NULL, NULL, NULL, 1, 0, 0, 1, 0, 0, 0 };
 
 #define is_option(str) (str[0] == '-' && str[1] != 0 && str[2] == 0)
-#define wheel(k, n, x) if (++k == n) {k = 0; x}
-#define verp(x) vrx{printf(x);}
-#define vrx if (VERBOSE)
+#define verbprint(x) verbosely{printf(x);}
+#define verbosely if (VERBOSE)
 
 static char VERBOSE = 0,
 			COMP_ONLY = 0,
 			FORCE = 0,
 			HIDE_DATA = 0,
-			SKIP_OVERFLOW = 0;
+			PRINT_CODE = 0,
+			SKIP_OVERFLOW = 0,
+			PRINT_EVERYTHING = 0;
 static Path P_RUNNING = NULL,
 			P_WRITTEN = NULL;
-static const String symbols = ".!/)%#>=(<:S[*$;";
+static const char* symbols = ".!/)%#>=(<:S[*$;";
 
 /***
  *    ooo        ooooo       .o.       ooooo ooooo      ooo 
@@ -116,8 +116,8 @@ static const String symbols = ".!/)%#>=(<:S[*$;";
 
 int main(int argc, char * argv[])
 {
-	String fileName = NULL;
-	File inputFile = NULL;
+	char* fileName = NULL;
+	FILE* inputFile = NULL;
 
 	if (argc < 2)
 	{
@@ -140,7 +140,7 @@ int main(int argc, char * argv[])
 
 	if (~strcmp(FILE_SYMBOLIC, &fileName[strlen(fileName) - 4]))
 	{
-		File outputFile = NULL;
+		FILE* outputFile = NULL;
 		fileName[strlen(fileName) - 4] = 0;
 		fileName = strncat(fileName, FILE_COMPILED, sizeof(FILE_COMPILED));
 		outputFile = fopen(fileName, "wb+");
@@ -169,11 +169,11 @@ int main(int argc, char * argv[])
  *                                                                                            
  */
 
-static void compile(File input, File output, String inputFileName)
+static void compile(FILE* input, FILE* output, char* inputFileName)
 {
 	unsigned char emptyBuffer = 1, toWrite = 0, isComment = 0, k = 0;
 	int ch;
-	vrx printf("\n%s%s\n", "Compiling to ", inputFileName);
+	verbosely printf("\n%s%s\n", "Compiling to ", inputFileName);
 	while ((ch = fgetc(input)) != EOF)
 	{
 		switch ((char)ch)
@@ -185,13 +185,17 @@ static void compile(File input, File output, String inputFileName)
 		default:
 			if (isComment)
 				break;
-			vrx putchar((char)ch);
+			verbosely putchar((char)ch);
 			if (!emptyBuffer)
 			{
 				toWrite |= getNybble((char)ch);
 				fputc(toWrite, output);
-				vrx printf(" %s ", l_to_str(toWrite, 2, 16));
-				wheel(k, 8, vrx putchar('\n');)
+				verbosely printf(" %s ", l_to_str(toWrite, 2, 16, 1));
+				if (++k == 8)
+				{
+					k = 0; 
+					verbosely putchar('\n');
+				}
 			}
 			else
 				toWrite = (char)(getNybble((char)ch) << 4);
@@ -202,10 +206,10 @@ static void compile(File input, File output, String inputFileName)
 
 	if (!emptyBuffer) {
 		fputc(toWrite, output);
-		vrx printf(". %x\n", toWrite);
+		verbosely printf(". %x\n", toWrite);
 	}
 
-	verp("Finished compiling.\n");
+	verbprint("Finished compiling.\n");
 	fclose(input);
 	fclose(output);
 }
@@ -237,9 +241,9 @@ unsigned char getNybble(char ch)
  *                                                                                                                      
  */
 
-static void interpret(String inputFileName)
+static void interpret(char* inputFileName)
 {
-	File inputFile = fopen(inputFileName, "rb");
+	FILE* inputFile = fopen(inputFileName, "rb");
 	unsigned long bytes_read = 0;	
 
 	/*************************                           RUN THE CODE                           *************************/
@@ -251,7 +255,7 @@ static void interpret(String inputFileName)
 	struct PATH newpath = NEW_PATH;									/* Make a new PATH with the initialization values.	*/
 	Path dao = &newpath;											/* Make a pointer to the newly initialized PATH.	*/
 
-	vrx
+	verbosely
 	{
 		printf("\n\n\t=====================\n"  );
 		printf(    "\t|Beginning Execution|\n"  );
@@ -275,7 +279,7 @@ static void interpret(String inputFileName)
 	(dao->prg_allocbits) = bytes_alloc * 8;							/* Set literal allocation bit size.				 	*/
 	/********************************************************************************************************************/
 
-	vrx printf("%s%s.\nLoading data:\n", "Running ", inputFileName);
+	verbosely printf("%s%s.\nLoading data:\n", "Running ", inputFileName);
 
 	if (bytes_alloc % sizeof(unsigned long) != 0)					/* Only occurs if it's less than one UL, one cell   */
 		bytes_alloc = sizeof(unsigned long);						/* Set the minimum									*/
@@ -286,30 +290,30 @@ static void interpret(String inputFileName)
 		perror("");
 		abort();
 	}
-	vrx printf("Allocated %d bytes for %d byte file.\n", bytes_alloc, file_size);
+	verbosely printf("Allocated %d bytes for %d byte file.\n", bytes_alloc, file_size);
 
 	bytes_read = fread((dao->prg_data), 1, file_size, inputFile);
 
-	vrx printf("Read %d bytes.\n\n", bytes_read);					/* Read file data into data array.					*/
+	verbosely printf("Read %d bytes.\n\n", bytes_read);					/* Read file data into data array.					*/
 
 	while (print_index++ < (bytes_alloc / sizeof(unsigned long)))	/* Traverse the array, and...						*/
 	{
 		flip_UL((dao->prg_data) + print_index - 1);					/* Flip the byte order to the correct one 			*/
-		vrx
+		verbosely
 		{
-			printf("%s   ", l_to_str((dao->prg_data)[print_index - 1], 8, 16));		/* If verbose, print out array contents	*/
+			printf("%s   ", l_to_str((dao->prg_data)[print_index - 1], 8, 16, 0));		/* If verbose, print out array contents	*/
 		if (print_index % 8 == 0) printf("\n");						/* New line every seven unsigned longs.				*/
 		}
 	}
 
-	vrx printf("(%d bytes)\n\n", (dao->prg_allocbits) / 8);			/* If verbose, output number of bytes.				*/
+	verbosely printf("(%d bytes)\n\n", (dao->prg_allocbits) / 8);			/* If verbose, output number of bytes.				*/
 	P_RUNNING = dao;												/* For the sake of levlim							*/
 	
 	/***************************************************** EXECUTE ******************************************************/
 	execs(dao, NULL);
-	vrx printf("Freeing %d bytes of data.\n", bytes_alloc);
+	verbosely printf("Freeing %d bytes of data.\n", bytes_alloc);
 	free((dao->prg_data));
-	verp("Data freed.\n")
+	verbprint("Data freed.\n")
 	/********************************************************************************************************************/
 
 }
@@ -328,17 +332,18 @@ static void interpret(String inputFileName)
  */
 
 #define arg_is(i, a) (!strcmp(parsed[i], a))
-static unsigned char hasExtension(String);
-static int  		 parsePosInt(String, unsigned int);
+
+static unsigned char hasExtension(char*);
+static int  		 parsePosInt(char*, unsigned int);
 static void 		 rad_print(Path, unsigned int);
-static void			 flag(String*, int);
+static void			 flag(char**, int);
 
 static void prompt()
 {
 	int ac;
 	unsigned char prompting = 1;
-	String input = calloc(2048, sizeof(char));
-	String* parsed = NULL;
+	char* input = calloc(2048, sizeof(char));
+	char** parsed = NULL;
 
 
 	while(prompting)
@@ -413,10 +418,10 @@ static void prompt()
 			{
 				if (ac > 1)
 				{
-					File inputFile = NULL;
-					String fileName = parsed[1];
-					String exeName = str_dup(fileName);
-					String daoName = str_dup(fileName);
+					FILE* inputFile = NULL;
+					char* fileName = parsed[1];
+					char* exeName = str_dup(fileName);
+					char* daoName = str_dup(fileName);
 
 					if (!hasExtension(fileName))
 					{
@@ -431,7 +436,7 @@ static void prompt()
 							daoName = strncat(daoName, FILE_SYMBOLIC, sizeof(FILE_SYMBOLIC));
 							if ((inputFile = fopen(daoName, "rb")) != NULL)
 							{
-								File outputFile = fopen(exeName, "wb+");
+								FILE* outputFile = fopen(exeName, "wb+");
 								compile(inputFile, outputFile, exeName);
 								interpret(fileName);
 							}
@@ -446,7 +451,7 @@ static void prompt()
 					{
 						if (~strcmp(FILE_SYMBOLIC, &fileName[strlen(fileName) - 4]))
 						{
-							File outputFile = NULL;
+							FILE* outputFile = NULL;
 							fileName[strlen(fileName) - 4] = 0;
 							fileName = strncat(fileName, FILE_COMPILED, sizeof(FILE_COMPILED));
 							outputFile = fopen(fileName, "wb+");
@@ -469,8 +474,8 @@ static void prompt()
 			{
 				if (ac > 1)
 				{
-					File inputFile = NULL;
-					String fileName = parsed[1];
+					FILE* inputFile = NULL;
+					char* fileName = parsed[1];
 					
 					/* If it has no extension and it is not being forced, look the .dao file */
 					if (!FORCE && !hasExtension(fileName))
@@ -479,7 +484,7 @@ static void prompt()
 					/* If such a file exists, AND (is of correct extension OR you are forcing) */
 					if ((inputFile = fopen(fileName, "rb")) != NULL && (FORCE || ~strcmp(FILE_SYMBOLIC, &fileName[strlen(fileName) - 4])))
 					{
-						File outputFile = NULL;
+						FILE* outputFile = NULL;
 						if (!FORCE)												/* If not forcing, truncate .dao to add .wuwei	*/
 							fileName[strlen(fileName) - 4] = 0;
 						fileName = strncat(fileName, FILE_COMPILED, sizeof(FILE_COMPILED));	/* Add .wuwei for output file 		*/
@@ -515,7 +520,7 @@ static void prompt()
 					return;
 				}
 
-				vrx printf("Allocated %d bytes.\n\n", sizeof(*(TLP -> child)));
+				verbosely printf("Allocated %d bytes.\n\n", sizeof(*(TLP -> child)));
 
 				memcpy((TLP -> child), &NEW_PATH, sizeof(struct PATH));			/* Copy over initialization data			 		*/
 				((TLP -> child) -> owner) = TLP;								/* Set owner of this new Path 						*/
@@ -647,7 +652,7 @@ static void prompt()
 								{
 									command = getNybble(parsed[i][j]);
 									/* Insert parsed symbol into the Top level program */
-									wbbi(TLP, (TLP -> prg_index), 4, command);
+									write_by_bit_index(TLP, (TLP -> prg_index), 4, command);
 									/* Increase size if necessary */
 									if ((TLP -> prg_index) > (TLP -> prg_allocbits))
 										doalc(TLP);
@@ -661,12 +666,12 @@ static void prompt()
 
 									if (doloop)
 									{
-										vrx diagnose(P_RUNNING, command);
-										verp("\n")
+										verbosely diagnose(P_RUNNING, command);
+										verbprint("\n")
 									}
 									else
 									{
-										vrx printf("Freed %d bytes.\n\n", sizeof(*P_WRITTEN));
+										verbosely printf("Freed %d bytes.\n\n", sizeof(*P_WRITTEN));
 										free(P_WRITTEN);
 									}
 								}
@@ -686,7 +691,7 @@ static void prompt()
 	freeparsedargs(parsed);
 }
 
-static void	flag(String* parsed, int ac)
+static void	flag(char** parsed, int ac)
 {
 	int i = 1;
 	/* We want the format: -flag ON/OFF */
@@ -714,7 +719,7 @@ static void	flag(String* parsed, int ac)
 		printf("Flag assignment expected. Use -<flag> ON/OFF.\n");
 }
 
-static unsigned char hasExtension(String input)
+static unsigned char hasExtension(char* input)
 {
 	unsigned int i = 0;
 	unsigned int length = strlen(input);
@@ -724,7 +729,7 @@ static unsigned char hasExtension(String input)
 	return 0;
 }
 
-static int parsePosInt(String input, unsigned int max)
+static int parsePosInt(char* input, unsigned int max)
 {
 	unsigned int i = 0;
 	unsigned int out = 0;
@@ -808,7 +813,7 @@ void freeparsedargs(char **argv)
 
 #define roc(o,v,c) case o:c=v; return &c;
 
-char* set_option(String str, char value)
+char* set_option(char* str, char value)
 {
 	if (is_option(str))
 		switch (str[1])
@@ -817,7 +822,9 @@ char* set_option(String str, char value)
 		roc('v', value, VERBOSE)
 		roc('c', value, COMP_ONLY)
 		roc('h', value, HIDE_DATA)
+		roc('d', value, PRINT_CODE)
 		roc('s', value, SKIP_OVERFLOW)
+		roc('p', value, PRINT_EVERYTHING)
 		default:
 			printf("Unknown option -%c.\n\n", str[1]);
 		}
@@ -827,37 +834,47 @@ char* set_option(String str, char value)
 static void flags()
 {
 	printf("\t-c : Compile without running\n");
+	printf("\t-d : Print code instead of numeric values.\n");
 	printf("\t-v : Enable Verbose Execution (For Debugging)\n");
 	printf("\t-w : Get Input before closing (For Debugging)\n");
-	printf("\t-f : Force Execution of Any File as COMPILED DAOYU (DANGEROUS)\n");
+	printf("\t-f : Force Execution of Any FILE* as COMPILED DAOYU (DANGEROUS)\n");
+	printf("\t-p : Print all data in every 32 tetrad line, even if all zeroes.\n");
 	printf("\t-s : When attempting to allocate more memory than is supported, skip the command instead of aborting. (NOT RECOMMENDED)\n");
 	printf("\t-h : Do not print the data of the written file when using Verbose Execution (For excessively large programs)\n\n");
 }
 
 static void splash()
 {	
-	#pragma    GCC diagnostic ignored  "-Wparentheses"
-	#pragma    GCC diagnostic ignored    "-Wtrigraphs"
-	int l = 0, i, n = 0, m = 0, x = 1<<6,ll=6>>!0,l91;
-	char* l9l = "$(*.)SS-*E.)(/.8'7*1).+=.,$/,E)&(/0.\
-	'(2.-)(,.,&-/..$**2,'(,.+&-/.-$)*7+&(+.+%(+/.'(..\
-	*$,*1.%)*/)&)*0+-(+.-$-/0)&**1,((,..$-/0)'**3-$0*\
-	1.&(/0);**5,$;-.3'(91)3-*3.$?/.[?(6.)+(*5)$5E.MK";
-	ll=x/=10,l91=191+19l+(x*=5)??(l9l];x+=2; for(i=0;\
-	ll<l91;ll++){while(0??!!((ll++-0[l9l])%'2'));ll--;
-	for(n=m+ll[l9l]-l9l[i++%5??!0??);m<n;m++){ if(!(m\
-	++%33))for(l=l91-3+0??!!(m-1);l91-l;)??<putchar(9\
-	+(l91-l-1)/2);l91--;??>m--;if((0??!!((m-669)%(4*(\
-	l=2)))) &&(m<686)&&(m>668))??<m++;putchar((m*1189\
-	-811862)/(m*17 - 11616+l));??>else putchar(x);??>\
-	x^=(x&l?0 :'8'/2)??!((x&(l+1)) + ((x&l)!=2))^0;??>
+	printf("\t\t                                 \n");
+	printf("\t\t              =====              \n");
+	printf("\t\t         =====#####=====         \n");
+	printf("\t\t      ===###############===      \n");
+	printf("\t\t    ===###################===    \n");
+	printf("\t\t   ==#######################==   \n");
+	printf("\t\t  ==#####   ########====#####==  \n");
+	printf("\t\t ==#####     #####==    ===###== \n");
+	printf("\t\t ==#####     ####=         ==##= \n");
+	printf("\t\t = =#####   ####=    ###     =#= \n");
+	printf("\t\t =  ==#########=    #####     == \n");
+	printf("\t\t ==   ===####==     #####     == \n");
+	printf("\t\t  ==     ====        ###     ==  \n");
+	printf("\t\t   ==                       ==   \n");
+	printf("\t\t    ===                   ===    \n");
+	printf("\t\t      ===               ===      \n");
+	printf("\t\t         =====     =====         \n");
+	printf("\t\t              =====              \n");
+	printf("\t\t                                 \n");
+	printf("\t\t   ===========================   \n");
+	printf("\t\t         D      A      O         \n");
+	printf("\t\t   ===========================   \n");
+	printf("\t\t                                 \n");
 	printf("\r\n[Welcome to C-DAOYU-UTILITY 1.5.0.0]\n");
 	printf("\tEnter a filename as a parameter, for example:\n\n");
 	printf("\t\"> dao hello_world.dao\"\n");
 	printf("\t\tto compile and execute.\n\n");
 	printf("Options:\n");
 	flags();
-	printf("\n");
+	putchar('\n');
 }
 
 char *str_dup (char *s) {
@@ -866,7 +883,7 @@ char *str_dup (char *s) {
     return d;                            /*Return new memory		*/
 }
 
-char* bin(unsigned long val) { return l_to_str(val, 32, 2); }
+char* bin(unsigned long val) { return l_to_str(val, 32, 2, 1); }
 
 char getChar(unsigned char ch)
 {
@@ -874,14 +891,14 @@ char getChar(unsigned char ch)
 	return symbols[ch];
 }
 
-char* l_to_str(unsigned long val, unsigned char len, unsigned char radix)
+char* l_to_str(unsigned long val, unsigned char len, unsigned char radix, unsigned char override_num_only)
 {
 	static char buf[32] = { '0' };
 	int i = 33;
 	for (; val && i; --i, val /= radix)
-		buf[i] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[val % radix];
+		buf[i] = ((PRINT_CODE && !override_num_only) ? ".!/)%#>=(<:S[*$;????????????????" : "0123456789ABCDEFGHIJKLMNOPQRSTUV")[val % radix];
 	for (; i; i--)
-		buf[i] = '0';
+		buf[i] = (PRINT_CODE && !override_num_only) ? '.' : '0';
 	return &buf[2 + (32 - len)];
 }
 
@@ -908,7 +925,7 @@ void flip_UL(unsigned long* target)									/* Generalize this sometime, ok? */
  *                                                                                                  
  */
 
-#define levlim(l)		if (PR_LEV >= l) {verp("LEV_SKIP");return;}
+#define levlim(l)		if (PR_LEV >= l) {verbprint("LEV_SKIP");return;}
 #define P_LEN 			(path -> sel_length)
 #define P_IND 			(path -> sel_index)
 #define P_ALC 			(path -> prg_allocbits)
@@ -924,13 +941,13 @@ static void swaps(Path path)
 {
 	unsigned int i = 0;
 	unsigned long report = 0;
-	levlim(2)
-		vrx printf("Swapped length %d.", P_LEN);
+	levlim(1)
+	verbosely printf("Swapped length %d.", P_LEN);
 	if (P_LEN == 1)	return;
 	if (P_LEN <= BITS_IN_CELL)
 	{
-		unsigned long hlen = P_LEN / 2;
-		wbbi(path, P_IND, P_LEN, rbbi(path, P_IND, hlen) | (rbbi(path, P_IND + hlen, hlen) << hlen));
+		unsigned long half_len = P_LEN / 2;
+		write_by_bit_index(path, P_IND, P_LEN, read_by_bit_index(path, P_IND, half_len) | (read_by_bit_index(path, P_IND + half_len, half_len) << half_len));
 		return;
 	}
 	while (i < ((P_LEN / BITS_IN_CELL) / 2))
@@ -950,13 +967,13 @@ static void later(Path path)
 static void merge(Path path)
 {
 	levlim(7)
-		if (P_LEN < P_ALC)
-		{
-			if (!algn(path))
-				P_IND -= P_LEN;
-			P_LEN <<= 1;
-			return;
-		}
+	if (P_LEN < P_ALC)
+	{
+		if (!algn(path))
+			P_IND -= P_LEN;
+		P_LEN <<= 1;
+		return;
+	}
 	if (P_OWNER == NULL)
 		return;
 	P_WRITTEN = P_OWNER;
@@ -968,17 +985,17 @@ static void sifts(Path path)
 {
 	int l = P_IND;
 	levlim(5)
-		while (l + 4 < P_ALC)
+	while (l + 4 < P_ALC)
+	{
+		if (!read_by_bit_index(path, l, 4))
 		{
-			if (!rbbi(path, l, 4))
-			{
-				int r = l;
-				for (; !rbbi(path, r, 4) && ((r + 4) < P_ALC); r += 4);			/* OPTIMIZE THIS ASAP */
-				wbbi(path, l, 4, rbbi(path, r, 4));
-				wbbi(path, r, 4, 0);
-			}
-			l += 4;
+			int r = l;
+			for (; !read_by_bit_index(path, r, 4) && ((r + 4) < P_ALC); r += 4);			/* OPTIMIZE THIS ASAP */
+			write_by_bit_index(path, l, 4, read_by_bit_index(path, r, 4));
+			write_by_bit_index(path, r, 4, 0);
 		}
+		l += 4;
+	}
 }
 
 static void execs(Path path, Path caller)
@@ -992,7 +1009,7 @@ static void execs(Path path, Path caller)
 		printf("FATAL ERROR: Unable to allocate memory.");
 		return;
 	}
-	vrx printf("Allocated %d bytes.\n\n", sizeof(*P_CHILD));
+	verbosely printf("Allocated %d bytes.\n\n", sizeof(*P_CHILD));
 	memcpy(P_CHILD, &NEW_PATH, sizeof(struct PATH));										/* Copy over initialization data			 		*/
 	(*(*path).child).owner = path;															/* Set owner of this new Path 						*/
 	(*(*path).child).prg_floor = (path->prg_floor) + 1;										/* Set floor of this new Path 						*/
@@ -1006,7 +1023,7 @@ static void execs(Path path, Path caller)
 	{
 		tempNum1 = (P_RUNNING->prg_index);
 		command = ((P_RUNNING->prg_data)[(tempNum1 * 4) / 32] >> (32 - ((tempNum1 * 4) % 32) - 4)) & mask(4);	/* Calculate command			*/
-		vrx diagnose(path, command);
+		verbosely diagnose(path, command);
 		
 		if (command == 5)
 			execs(P_WRITTEN, path);
@@ -1033,17 +1050,17 @@ static void execs(Path path, Path caller)
 		case 0xF: input(P_WRITTEN); break;
 		}
 		*/
-		verp("\n");
+		verbprint("\n");
 	}
 	if (caller == NULL)
 	{
-		verp("Top-level program terminated.\n")
+		verbprint("Top-level program terminated.\n")
 			free(P_CHILD);
 		return;
 	}
 	if (!doloop)
 	{
-		vrx printf("Freed %d bytes.\n\n", sizeof(*P_CHILD));
+		verbosely printf("Freed %d bytes.\n\n", sizeof(*P_CHILD));
 		free(P_CHILD);
 		doloop = 1;
 	}
@@ -1060,20 +1077,20 @@ static void delev(Path path)
 static void equal(Path path)
 {
 	levlim(5)
-		if (rbbi(path, P_IND, 1) ^ rbbi(path, P_IND + P_LEN - 1, 1))
-			skip();
-		else
-			verp("EQUAL");
+	if (read_by_bit_index(path, P_IND, 1) ^ read_by_bit_index(path, P_IND + P_LEN - 1, 1))
+		skip();
+	else
+		verbprint("EQUAL");
 }
 
 static void halve(Path path)
 {
 	levlim(7)
-		if (P_LEN > 1)
-		{
-			P_LEN /= 2;
-			return;
-		}
+	if (P_LEN > 1)
+	{
+		P_LEN /= 2;
+		return;
+	}
 	if (P_CHILD == NULL)
 		return;
 	P_WRITTEN = P_CHILD;
@@ -1083,7 +1100,7 @@ static void halve(Path path)
 static void uplev(Path path)
 {
 	levlim(9)
-		PR_LEV++;
+	PR_LEV++;
 	(P_RUNNING->prg_index) = PR_START - 1;
 }
 
@@ -1091,14 +1108,14 @@ static void reads(Path path)
 {
 	long pos = P_IND;
 	levlim(6)
-		if (P_LEN < 8)
-		{
-			String out = bin(rbbi(path, pos, P_LEN));
-			printf("%s", &out[strlen(out) - P_LEN]);
-			return;
-		}
+	if (P_LEN < 8)
+	{
+		char* out = bin(read_by_bit_index(path, pos, P_LEN));
+		printf("%s", &out[strlen(out) - P_LEN]);
+		return;
+	}
 	for (; pos < (P_IND + P_LEN); pos += 8)
-		putchar(rbbi(path, pos, 8));
+		putchar(read_by_bit_index(path, pos, 8));
 }
 
 static void dealc(Path path)
@@ -1106,12 +1123,12 @@ static void dealc(Path path)
 	levlim(2)
 	if (P_ALC == 1)
 	{
-		int report = rbbi(path, 0, 1);
+		int report = read_by_bit_index(path, 0, 1);
 		if ((P_RUNNING->owner) != NULL)
 		{
 			unsigned long ownind = ((P_RUNNING->owner)->prg_index);
-			vrx printf("Terminating program from position %x with value %x", ownind, report);
-			wbbi(P_RUNNING->owner, (ownind) * 4, 4, report);
+			verbosely printf("Terminating program from position %x with value %x", ownind, report);
+			write_by_bit_index(P_RUNNING->owner, (ownind) * 4, 4, report);
 		}
 		free(P_DATA);
 		P_DATA = NULL;
@@ -1123,7 +1140,8 @@ static void dealc(Path path)
 		realloc(P_DATA, 1);
 	else
 		realloc(P_DATA, P_ALC / 8);
-	halve(path);
+	if (P_LEN > 1)
+		halve(path);
 	if ((P_IND + P_LEN) > P_ALC)
 		P_IND -= P_ALC;
 }
@@ -1145,8 +1163,8 @@ static void split(Path path)
 		}
 		if (len <= BITS_IN_CELL)
 		{
-			wbbi(path, P_IND, len >> 1, mask(len));
-			wbbi(path, P_IND + (len >> 1), len >> 1, ~mask(len));
+			write_by_bit_index(path, P_IND, len >> 1, mask(len));
+			write_by_bit_index(path, P_IND + (len >> 1), len >> 1, ~mask(len));
 		}
 		else
 		{
@@ -1165,10 +1183,10 @@ static void split(Path path)
 static void polar(Path path)
 {
 	levlim(3)
-		if (!(rbbi(path, P_IND, 1) && !rbbi(path, P_IND + P_LEN - 1, 1)))
-			skip();
-		else
-			verp("POLAR");
+	if (!(read_by_bit_index(path, P_IND, 1) && !read_by_bit_index(path, P_IND + P_LEN - 1, 1)))
+		skip();
+	else
+		verbprint("POLAR");
 }
 
 static void doalc(Path path)
@@ -1210,13 +1228,13 @@ static void input(Path path)
 {
 	int i = P_IND;
 	levlim(6)
-		if (P_LEN < 8)
-		{
-			wbbi(path, P_IND, P_LEN, getchar());
-			return;
-		}
+	if (P_LEN < 8)
+	{
+		write_by_bit_index(path, P_IND, P_LEN, getchar());
+		return;
+	}
 	for (; i < (P_IND + P_LEN); i += 8)
-		wbbi(path, i, 8, getchar());
+		write_by_bit_index(path, i, 8, getchar());
 }
 
 /***
@@ -1243,12 +1261,12 @@ unsigned long mask(int length)
 	else			 	return 0xFFFFFFFF;
 }
 
-unsigned long rbbi(Path path, unsigned long i, unsigned long len)
+unsigned long read_by_bit_index(Path path, unsigned long i, unsigned long len)
 {
 	return (P_DATA[i / BITS_IN_CELL] >> (BITS_IN_CELL - (i % BITS_IN_CELL) - len)) & mask(len);
 }
 
-static void wbbi(Path path, unsigned long i, unsigned long len, unsigned long write)
+static void write_by_bit_index(Path path, unsigned long i, unsigned long len, unsigned long write)
 {
 	int shift = BITS_IN_CELL - (i % BITS_IN_CELL) - len;
 	if (len > BITS_IN_CELL) abort();
@@ -1258,18 +1276,100 @@ static void wbbi(Path path, unsigned long i, unsigned long len, unsigned long wr
 
 static void bin_print(Path path)
 {
-	unsigned long i = 0;
-	String out;
-	if (P_ALC <= BITS_IN_CELL)
+	unsigned long c_ind = 0;
+	unsigned long c_num = P_ALC / BITS_IN_CELL;
+	unsigned long empty_lines = 0;
+	unsigned char j = 0;
+	char* out;
+	/* One or less cells */
+	if (c_num <= 1)
 	{
-		out = bin(rbbi(path, 0, P_ALC));
+		out = bin(read_by_bit_index(path, 0, P_ALC));
 		printf("%s", &out[strlen(out) - P_ALC]);
 		return;
 	}
-	for (; i < (P_ALC / BITS_IN_CELL); i++)
+	/* One or less lines */
+	if (c_num <= 4 || PRINT_EVERYTHING)
 	{
-		out = l_to_str(P_DATA[i], 8, 16);
-		printf("%s", out);
+		/* For each cell */
+		for (; c_ind < c_num; c_ind++)
+		{
+			/* Print the contents */
+			printf("%s", l_to_str(P_DATA[c_ind], 8, 16, 0));
+
+			/* If not the last index of a line */
+			if ((c_ind + 1) % 4 != 0)
+				putchar(' ');
+			/* If the last index of a not-final line */
+			else if (c_ind != (c_num - 1))
+				printf("\n                 ");
+		}
+		return;
+	}
+	/* More than one line */
+	/* Scan by lines      */
+	for (; (c_ind) < c_num; c_ind += 4)
+	{
+		
+		/* If line is not all zeroes      */
+		/* That is: If any are not zeroes */
+		if (P_DATA[c_ind] || P_DATA[c_ind+1] || P_DATA[c_ind+2] || P_DATA[c_ind+3])
+		{
+
+			/* See if we have backlogged empty lines */
+			if (empty_lines != 0)
+			{
+				if (empty_lines > 1)
+				{
+					out = str_dup(l_to_str(32 * empty_lines, 6, 10, 1));
+					for (j = 0; j < strlen(out) && out[j] == '0'; j++)
+							out[j] = ' ';
+					printf(".         %s n x 0            .", out);
+					printf("\n                        ");
+					empty_lines = 0;
+				}
+				/* Just one empty line */
+				else
+				{
+					printf("........ ........ ........ ........");
+					printf("\n                        ");
+					empty_lines = 0;
+				}
+			}
+
+			/* Print this line */
+			
+			printf("%s ", l_to_str(P_DATA[c_ind  ], 8, 16, 0));
+			printf("%s ", l_to_str(P_DATA[c_ind+1], 8, 16, 0));
+			printf("%s ", l_to_str(P_DATA[c_ind+2], 8, 16, 0));
+			printf("%s" , l_to_str(P_DATA[c_ind+3], 8, 16, 0));
+
+			/* Newline and indent if not last line */
+			if ((c_ind + 4) < c_num)
+				printf("\n                        ");
+		}
+		/* Line is all zeroes */
+		else
+			empty_lines++;
+
+		/* If we have empty-backlog on the last line */
+		if ((c_ind + 4) >= c_num)
+		{
+			if (empty_lines > 1)
+			{
+				out = str_dup(l_to_str(32 * empty_lines, 6, 10, 1));
+				for (j = 0; j < strlen(out) && out[j] == '0'; j++)
+						out[j] = ' ';
+				printf(".         %s n x 0            .", out);
+				empty_lines = 0;
+			}
+			/* Just one empty line */
+			else if (empty_lines == 1)
+			{
+				printf("........ ........ ........ ........");
+				empty_lines = 0;
+			}
+		}
 	}
 }
 
@@ -1277,17 +1377,17 @@ static void rad_print(Path path, unsigned int radix)
 {
 	unsigned long i = 0;
 	unsigned char len = 0;
-	String out;
+	char* out;
 	for (; radix >> len != 0; len++);
 	len = 32 / len;
 	if (P_ALC <= BITS_IN_CELL)
 	{
-		out = l_to_str(rbbi(path, 0, P_ALC), 32, 2);
+		out = l_to_str(read_by_bit_index(path, 0, P_ALC), 32, 2, 1);
 		printf("%s", &out[strlen(out) - P_ALC]);
 	}
 	while (i < (P_ALC / BITS_IN_CELL))
 	{
-		out = l_to_str(P_DATA[i], len, radix);
+		out = l_to_str(P_DATA[i], len, radix, 1);
 		printf("%s", out);
 		if (i++ < (P_ALC / BITS_IN_CELL))
 			putchar(' ');
@@ -1297,13 +1397,18 @@ static void rad_print(Path path, unsigned int radix)
 static void skip()
 {
 	if (P_RUNNING == NULL) return;
-	verp("SKIP");
+	verbprint("SKIP");
 	(P_RUNNING->prg_index)++;
 }
 
 static void diagnose(Path path, unsigned char command)
 {
-	printf("%s R%d W%d L%d %c ", l_to_str(P_PIND, 5, 16), (P_RUNNING->prg_floor), (P_WRITTEN->prg_floor), PR_LEV, getChar(command));
+	printf("%s " , l_to_str(P_PIND, 5, 16, 1));
+	printf("R%d ", (P_RUNNING->prg_floor));
+	printf("W%d ", (P_WRITTEN->prg_floor));
+	printf("L%d ", PR_LEV);
+	printf("*%s ", l_to_str(P_LEN, 5, 10, 1));
+	printf("%c " , getChar(command));
 	if (!HIDE_DATA)
 		bin_print(P_WRITTEN);
 	printf(" : ");
