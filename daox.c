@@ -313,6 +313,7 @@ static void interpret(char* inputFileName)
 	execs(dao, NULL);
 	verbosely printf("Freeing %d bytes of data.\n", bytes_alloc);
 	free((dao->prg_data));
+	(dao -> prg_data) = NULL;
 	verbprint("Data freed.\n")
 	/********************************************************************************************************************/
 
@@ -1004,22 +1005,27 @@ static void execs(Path path, Path caller)
 	unsigned long tempNum1 = 0;																/* Expedite calculation								*/
 	levlim(8)																				/* Level operation checking							*/
 	P_RUNNING = path;																		/* Set running 										*/
-	if ((P_CHILD = (calloc(1, sizeof(struct PATH)))) == NULL)								/* Allocate memory space 							*/
-	{																						/* Cover error case							 		*/
-		printf("FATAL ERROR: Unable to allocate memory.");
-		return;
-	}
-	verbosely printf("Allocated %d bytes.\n\n", sizeof(*P_CHILD));
-	memcpy(P_CHILD, &NEW_PATH, sizeof(struct PATH));										/* Copy over initialization data			 		*/
-	(*(*path).child).owner = path;															/* Set owner of this new Path 						*/
-	(*(*path).child).prg_floor = (path->prg_floor) + 1;										/* Set floor of this new Path 						*/
-	(*(*path).child).prg_data = calloc(1, sizeof(unsigned long));							/* Set data  of this new Path 						*/
 
+	if (P_CHILD == NULL)																	/* If there is no child 							*/
+	{
+		if ((P_CHILD = (calloc(1, sizeof(struct PATH)))) == NULL)							/* Allocate memory space 							*/
+		{																					/* Cover error case							 		*/
+			printf("FATAL ERROR: Unable to allocate memory.");
+			return;
+		}
+		verbosely printf("Allocated %d bytes.\n\n", sizeof(*P_CHILD));
+		memcpy(P_CHILD, &NEW_PATH, sizeof(struct PATH));									/* Copy over initialization data			 		*/
+		(*(*path).child).owner = path;														/* Set owner of this new Path 						*/
+		(*(*path).child).prg_floor = (path->prg_floor) + 1;									/* Set floor of this new Path 						*/
+		(*(*path).child).prg_data = calloc(1, sizeof(unsigned long));						/* Set data  of this new Path 						*/
+	}
+	else
+		verbosely putchar('\n');
 	P_WRITTEN = P_CHILD;																	/* Set this as written on 							*/
 	P_PIND = (P_IND / 4);																	/* Set program pointer. Rounds down.x				*/
 	PR_START = P_PIND;																		/* Track start position 							*/
 
-	for (; doloop && P_PIND < (P_ALC / 4); P_PIND++)										/* Execution Loop 									*/
+	for (; doloop && P_PIND < (P_ALC / 4) && path != NULL && P_WRITTEN != NULL ; P_PIND++)	/* Execution Loop 									*/
 	{
 		tempNum1 = (P_RUNNING->prg_index);
 		command = ((P_RUNNING->prg_data)[(tempNum1 * 4) / 32] >> (32 - ((tempNum1 * 4) % 32) - 4)) & mask(4);	/* Calculate command			*/
@@ -1055,13 +1061,15 @@ static void execs(Path path, Path caller)
 	if (caller == NULL)
 	{
 		verbprint("Top-level program terminated.\n")
-			free(P_CHILD);
+		free(P_CHILD);
+		P_CHILD = NULL;
 		return;
 	}
 	if (!doloop)
 	{
 		verbosely printf("Freed %d bytes.\n\n", sizeof(*P_CHILD));
 		free(P_CHILD);
+		P_CHILD = NULL;
 		doloop = 1;
 	}
 	P_RUNNING = caller;

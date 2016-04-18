@@ -33,3 +33,22 @@ in daox
 		that functionality can be impl inside a daoyu program
 
 		check if it's the delegation of P_WRITTEN and P_RUNNING at the end of an EXECS that is causing trouble
+
+
+
+
+
+ok so somewhere basiclly
+
+	dealc caused the FREE() of a child path...
+	but i was still going to use that child path.
+	this causes a problem
+
+	the error happened when:
+		0x28fecc was given to diagnose(path, command)
+		bin_print(0x2d2da8) was called.
+		that is however a problematic thing since 0x2d2da8 is not a valid path.
+			however the child of 0x28fecc was 0x2d2da8 so...
+			this also happened after the destruction of the thing
+
+	ALL GOOD THANK YOU :)

@@ -1,0 +1,416 @@
+(/(((([[[]!]!])))))
+(/(((([[[]]!])))))
+(/(((([[[]]])))))
+((/(/(/(/(/[[]!]!)))))/((([([[]])]!))))
+((/(/(/(/(/[[]]!))))))
+((/(/(/(/(/[[]]))))))
+((/(/(/(/[[[]!]!])))))
+((/(/(/(/([[]]!))))))
+((/(/(/(/([[]]))))))
+((/(/(/[(/[[]!]!)]))))
+((/(/(/((/[[]]!))))))
+((/(/(/((/[[]]))))))
+((/(/(/([[[]!]!])))))
+((/(/(/(([[]]!))))))
+((/(/(/(([[]]))))))
+((/(/[(/(/[[]!]!))])))
+((/(/((/(/[[]]!))))))
+((/(/((/(/[[]]))))))
+((/(/((/[[[]!]!])))))
+((/(/((/([[]]!))))))
+((/(/((/([[]]))))))
+((/(/([(/[[]!]!)]))))
+((/(/(((/[[]]!))))))
+((/(/(((/[[]]))))))
+((/(/(([[[]!]!])))))
+((/(/((([[]]!))))))
+((/(/((([[]]))))))
+((/[(/(/(/[[]!]!)))]))
+((/((/(/(/[[]]!))))))
+((/((/(/(/[[]]))))))
+((/((/(/[[[]!]!])))))
+((/((/(/([[]]!))))))
+((/((/(/([[]]))))))
+((/((/[(/[[]!]!)]))))
+((/((/((/[[]]!))))))
+((/((/((/[[]]))))))
+((/((/([[[]!]!])))))
+((/((/(([[]]!))))))
+((/((/(([[]]))))))
+((/([(/(/[[]!]!))])))
+((/(((/(/[[]]!))))))
+((/(((/(/[[]]))))))
+((/(((/[[[]!]!])))))
+((/(((/([[]]!))))))
+((/(((/([[]]))))))
+((/(([(/[[]!]!)]))))
+((/((((/[[]]!))))))
+((/((((/[[]]))))))
+((/((([[[]!]!])))))
+((/(((([[]]!))))))
+((/(((([[]]))))))
+([(/(/(/(/[[]!]!))))])
+(((/(/(/(/[[]]!))))))
+(((/(/(/(/[[]]))))))
+(((/(/(/[[[]!]!])))))
+(((/(/(/([[]]!))))))
+(((/(/(/([[]]))))))
+(((/(/[(/[[]!]!)]))))
+(((/(/((/[[]]!))))))
+(((/(/((/[[]]))))))
+(((/(/([[[]!]!])))))
+(((/(/(([[]]!))))))
+(((/(/(([[]]))))))
+(((/[(/(/[[]!]!))])))
+(((/((/(/[[]]!))))))
+(((/((/(/[[]]))))))
+(((/((/[[[]!]!])))))
+(((/((/([[]]!))))))
+(((/((/([[]]))))))
+(((/([(/[[]!]!)]))))
+(((/(((/[[]]!))))))
+(((/(((/[[]]))))))
+(((/(([[[]!]!])))))
+(((/((([[]]!))))))
+(((/((([[]]))))))
+(([(/(/(/[[]!]!)))]))
+((((/(/(/[[]]!))))))
+((((/(/(/[[]]))))))
+((((/(/[[[]!]!])))))
+((((/(/([[]]!))))))
+((((/(/([[]]))))))
+((((/[(/[[]!]!)]))))
+((((/((/[[]]!))))))
+((((/((/[[]]))))))
+((((/([[[]!]!])))))
+((((/(([[]]!))))))
+((((/(([[]]))))))
+((([(/(/[[]!]!))])))
+(((((/(/[[]]!))))))
+(((((/(/[[]]))))))
+(((((/[[[]!]!])))))
+(((((/([[]]!))))))
+(((((/([[]]))))))
+(((([(/[[]!]!)]))))
+((((((/[[]]!))))))
+((((((/[[]]))))))
+((((([[[]!]!])))))
+(((((([[]]!))))))
+(((((([[]]))))))
+
+DECR in order
+
+aka setcounter. line numbers are in order of use...
+line 1 sets counter to 99-1, and so on until line 99 which sets counter to 99-99 = 0.
+
+
+
+line up:
+
+(                     /(((([[[]!]!]) ))))
+(                     /(((([[[] ]!]) ))))
+(                     /(((([[[] ] ]) ))))
+((/(/(/(/(/[[]!]!)))))/((([([[] ] )]!))))
+((/(/(/(/(/[[] ]!)))))                  )
+((/(/(/(/(/[[] ] )))))                  )
+((/(/(/(/[ [[]!]!]))))                  )
+((/(/(/(/( [[] ]!)))))                  )
+((/(/(/(/( [[] ] )))))                  )
+((/(/(/[ (/[[]!]!)])))                  )
+((/(/(/( (/[[] ]!)))))                  )
+((/(/(/( (/[[] ] )))))                  )
+((/(/(/( [ [[]!]!]))))                  )
+((/(/(/( ( [[] ]!)))))                  )
+((/(/(/( ( [[] ] )))))                  )
+((/(/[ (/(/[[]!]!))]))                  )
+((/(/( (/(/[[] ]!)))))                  )
+((/(/( (/(/[[] ] )))))                  )
+((/(/( (/[ [[]!]!]))))                  )
+((/(/( (/( [[] ]!)))))                  )
+((/(/( (/( [[] ] )))))                  )
+((/(/( [ (/[[]!]!)])))                  )
+((/(/( ( (/[[] ]!)))))                  )
+((/(/( ( (/[[] ] )))))                  )
+((/(/( ( [ [[]!]!]))))                  )
+((/(/( ( ( [[] ]!)))))                  )
+((/(/( ( ( [[] ] )))))                  )
+((/[ (/(/(/[[]!]!)))])                  )
+((/( (/(/(/[[] ]!)))))                  )
+((/( (/(/(/[[] ] )))))                  )
+((/( (/(/[ [[]!]!]))))                  )
+((/( (/(/( [[] ]!)))))                  )
+((/( (/(/( [[] ] )))))                  )
+((/( (/[ (/[[]!]!)])))                  )
+((/( (/( (/[[] ]!)))))                  )
+((/( (/( (/[[] ] )))))                  )
+((/( (/( [ [[]!]!]))))                  )
+((/( (/( ( [[] ]!)))))                  )
+((/( (/( ( [[] ] )))))                  )
+((/( [ (/(/[[]!]!))]))                  )
+((/( ( (/(/[[] ]!)))))                  )
+((/( ( (/(/[[] ] )))))                  )
+((/( ( (/[ [[]!]!]))))                  )
+((/( ( (/( [[] ]!)))))                  )
+((/( ( (/( [[] ] )))))                  )
+((/( ( [ (/[[]!]!)])))                  )
+((/( ( ( (/[[] ]!)))))                  )
+((/( ( ( (/[[] ] )))))                  )
+((/( ( ( [ [[]!]!]))))                  )
+((/( ( ( ( [[] ]!)))))                  )
+((/( ( ( ( [[] ] )))))                  )
+([ (/(/(/(/[[]!]!))))]                  )
+(( (/(/(/(/[[] ]!)))))                  )
+(( (/(/(/(/[[] ] )))))                  )
+(( (/(/(/[ [[]!]!]))))                  )
+(( (/(/(/( [[] ]!)))))                  )
+(( (/(/(/( [[] ] )))))                  )
+(( (/(/[ (/[[]!]!)])))                  )
+(( (/(/( (/[[] ]!)))))                  )
+(( (/(/( (/[[] ] )))))                  )
+(( (/(/( [ [[]!]!]))))                  )
+(( (/(/( ( [[] ]!)))))                  )
+(( (/(/( ( [[] ] )))))                  )
+(( (/[ (/(/[[]!]!))]))                  )
+(( (/( (/(/[[] ]!)))))                  )
+(( (/( (/(/[[] ] )))))                  )
+(( (/( (/[ [[]!]!]))))                  )
+(( (/( (/( [[] ]!)))))                  )
+(( (/( (/( [[] ] )))))                  )
+(( (/( [ (/[[]!]!)])))                  )
+(( (/( ( (/[[] ]!)))))                  )
+(( (/( ( (/[[] ] )))))                  )
+(( (/( ( [ [[]!]!]))))                  )
+(( (/( ( ( [[] ]!)))))                  )
+(( (/( ( ( [[] ] )))))                  )
+(( [ (/(/(/[[]!]!)))])                  )
+(( ( (/(/(/[[] ]!)))))                  )
+(( ( (/(/(/[[] ] )))))                  )
+(( ( (/(/[ [[]!]!]))))                  )
+(( ( (/(/( [[] ]!)))))                  )
+(( ( (/(/( [[] ] )))))                  )
+(( ( (/[ (/[[]!]!)])))                  )
+(( ( (/( (/[[] ]!)))))                  )
+(( ( (/( (/[[] ] )))))                  )
+(( ( (/( [ [[]!]!]))))                  )
+(( ( (/( ( [[] ]!)))))                  )
+(( ( (/( ( [[] ] )))))                  )
+(( ( [ (/(/[[]!]!))]))                  )
+(( ( ( (/(/[[] ]!)))))                  )
+(( ( ( (/(/[[] ] )))))                  )
+(( ( ( (/[ [[]!]!]))))                  )
+(( ( ( (/( [[] ]!)))))                  )
+(( ( ( (/( [[] ] )))))                  )
+(( ( ( [ (/[[]!]!)])))                  )
+(( ( ( ( (/[[] ]!)))))                  )
+(( ( ( ( (/[[] ] )))))                  )
+(( ( ( ( [ [[]!]!]))))                  )
+(( ( ( ( ( [[] ]!)))))                  )
+(( ( ( ( ( [[] ] )))))                  )
+
+
+
+lines by diff against previous
+for use with daoyutil
+
+
+(...................../(((([[[]!]!]).))))
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.]xxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx].xxxxxxx
+x(/(/(/(/(/[[]!]!)))))xxxx[(xxxx]x)]!xxxx
+xxxxxxxxxxxxxx.xxxxxxx.........x.x......x
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx[.(/xxx!x!x]xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx(xxxxxx.xxx)xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxx[.x/x/xxx!x!x)]xxxxxxxxxxxxxxxxxxxxx
+xxxxx(xxxxxxxx.xxxx)xxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx[.(/xxx!x!x]xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx(xxxxxx.xxx)xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xx/[.x/x/x/xxx!x!xxx]xxxxxxxxxxxxxxxxxxxx
+xxx(xxxxxxxxxx.xxxxx)xxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx[.x/xxx!x!x]xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx(xxxxxx.xxx)xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxx[.x/x/xxx!x!xx]xxxxxxxxxxxxxxxxxxxxx
+xxxxx(xxxxxxxx.xxxx)xxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx[.x/xxx!x!x]xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx(xxxxxx.xxx)xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+x[.x/x/x/x/xxx!x!xxxx]xxxxxxxxxxxxxxxxxxx
+x(xxxxxxxxxxxx.xxxxxx)xxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx[.x/xxx!x!x]xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx(xxxxxx.xxx)xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxx[.x/x/xxx!x!xx]xxxxxxxxxxxxxxxxxxxxx
+xxxxx(xxxxxxxx.xxxx)xxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx[.x/xxx!x!x]xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx(xxxxxx.xxx)xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxx[.x/x/x/xxx!x!xxx]xxxxxxxxxxxxxxxxxxxx
+xxx(xxxxxxxxxx.xxxxx)xxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx[.x/xxx!x!x]xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx(xxxxxx.xxx)xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxx[.x/x/xxx!x!xx]xxxxxxxxxxxxxxxxxxxxx
+xxxxx(xxxxxxxx.xxxx)xxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx[.x/xxx!x!x]xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxx(xxxxxx.xxx)xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx[.xxx!x!]xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxx(xxxx.xx)xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+with spaces not x
+
+(...................../(((([[[]!]!]).))))
+                               .]        
+                                ].       
+ (/(/(/(/(/[[]!]!)))))    [(    ] )]!    
+              .       ......... . ...... 
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+       [.(/   ! ! ]                      
+       (      .   )                      
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+     [. / /   ! ! )]                     
+     (        .    )                     
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+       [.(/   ! ! ]                      
+       (      .   )                      
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+  /[. / / /   ! !   ]                    
+   (          .     )                    
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+       [. /   ! ! ]                      
+       (      .   )                      
+                .                        
+         [.   ! !                        
+         (    .                          
+                .                        
+     [. / /   ! !  ]                     
+     (        .    )                     
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+       [. /   ! ! ]                      
+       (      .   )                      
+                .                        
+         [.   ! !                        
+         (    .                          
+                .                        
+ [. / / / /   ! !    ]                   
+ (            .      )                   
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+       [. /   ! ! ]                      
+       (      .   )                      
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+     [. / /   ! !  ]                     
+     (        .    )                     
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+       [. /   ! ! ]                      
+       (      .   )                      
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+   [. / / /   ! !   ]                    
+   (          .     )                    
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+       [. /   ! ! ]                      
+       (      .   )                      
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+     [. / /   ! !  ]                     
+     (        .    )                     
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                .                        
+       [. /   ! ! ]                      
+       (      .   )                      
+                .                        
+         [.   ! !]                       
+         (    .  )                       
+                                         
