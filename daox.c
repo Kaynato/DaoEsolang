@@ -685,8 +685,7 @@ static void prompt()
 				free((TLP -> child));
 			}
 			/************************************************** INVALID OPTION CASE *************************************************/
-			else
-				printf("%s is not a recognized or valid option.\n", parsed[0]);
+			else printf("%s is not a recognized or valid option.\n", parsed[0]);
 		}
 	}
 	freeparsedargs(parsed);
