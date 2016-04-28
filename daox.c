@@ -294,14 +294,14 @@ static void interpret(char* inputFileName)
 
 	bytes_read = fread((dao->prg_data), 1, file_size, inputFile);
 
-	verbosely printf("Read %d bytes.\n\n", bytes_read);					/* Read file data into data array.					*/
+	verbosely printf("Read %d bytes.\n\n", bytes_read);				/* Read file data into data array.					*/
 
 	while (print_index++ < (bytes_alloc / sizeof(unsigned long)))	/* Traverse the array, and...						*/
 	{
 		flip_UL((dao->prg_data) + print_index - 1);					/* Flip the byte order to the correct one 			*/
 		verbosely
 		{
-			printf("%s   ", l_to_str((dao->prg_data)[print_index - 1], 8, 16, 0));		/* If verbose, print out array contents	*/
+			printf("%s   ", l_to_str((dao->prg_data)[print_index - 1], 8, 16, 0));/* If verbose, print out array contents*/
 		if (print_index % 8 == 0) printf("\n");						/* New line every seven unsigned longs.				*/
 		}
 	}

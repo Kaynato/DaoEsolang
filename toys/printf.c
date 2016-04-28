@@ -4,7 +4,7 @@
 int main()
 {
 	char   ch    = 'A';
-	char*  chptr = NULL;
+	int*  chptr = NULL;
 	char** chpt2 = NULL;
 
 	printf("ch is %c\n", ch);
@@ -30,6 +30,14 @@ int main()
 	putchar(*(chptr + 3));
 	putchar(*(chptr + 4));
 	putchar(*(chptr + 5));
+
+	printf("\nchpt2 points to chptr containing ");
+	putchar(*(*chpt2));
+	putchar(*(*chpt2 + 1));
+	putchar(*(*chpt2 + 2));
+	putchar(*(*chpt2 + 3));
+	putchar(*(*chpt2 + 4));
+	putchar(*(*chpt2 + 5));
 	putchar('\n');
 
 	printf("\n");
