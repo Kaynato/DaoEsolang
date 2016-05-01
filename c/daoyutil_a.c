@@ -10,8 +10,8 @@
 							#define      y(   _) fputc/****DAOYU*****/(_, o);
 							#define       G(r,c) case/***UTILITY****/c:_(r);
 							#define        P(k,r) if(!/***********/(k))_(r);
-							#include        <stdio.h>/****BY**************/
-							 #define         g/*********KAYNATO******/n->v
+							#include        <stdio.h>/********************/
+							 #define         g/**********************/n->v
 							  z(d*D,d{D        X;D Z;/***************/D h;
 							   char v; D   A }_,O{_*Y;_*U}T)_*I(),*L (_*,
 							   _*);T*            Q;/*********/FILE*o,*i;

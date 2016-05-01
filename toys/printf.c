@@ -1,50 +1,68 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+unsigned long ptwo_round(unsigned long);
+
 int main()
 {
-	char   ch    = 'A';
-	int*  chptr = NULL;
-	char** chpt2 = NULL;
+/*
+	char* in = "1203912303!3929399";
 
-	printf("ch is %c\n", ch);
-	printf("chptr points to %x\n", chptr);
+	char* code = NULL;
+	char* input = NULL;*/
 
-	chptr = &ch;
+	unsigned long num = 7;
 
-	printf("chptr points to %x containing %c\n", chptr, *chptr);
-
-	chpt2 = &chptr;
-
-	printf("chpt2 points to %x containing %x containing %c\n", chpt2, *chpt2, **chpt2);
+	printf("%d\n", ptwo_round(num));
 
 
-	chptr = "STRING";
-	/* S T R I N G */
-	/* 0 1 2 3 4 5 */
 
-	printf("chptr points to %x containing ", chptr);
-	putchar(*(chptr));
-	putchar(*(chptr + 1));
-	putchar(*(chptr + 2));
-	putchar(*(chptr + 3));
-	putchar(*(chptr + 4));
-	putchar(*(chptr + 5));
+	return 0;
 
-	printf("\nchpt2 points to chptr containing ");
-	putchar(*(*chpt2));
-	putchar(*(*chpt2 + 1));
-	putchar(*(*chpt2 + 2));
-	putchar(*(*chpt2 + 3));
-	putchar(*(*chpt2 + 4));
-	putchar(*(*chpt2 + 5));
-	putchar('\n');
+	if (0) {
+		char   ch    = 'A';
+		char*  chptr = NULL;
+		char** chpt2 = NULL;
 
-	printf("\n");
-	printf("\n");
-	printf("\n");
+		printf("ch is %c\n", ch);
+		printf("chptr points to %x\n", chptr);
 
-	printf("%d\n", -0 / 2);
+		chptr = &ch;
+
+		printf("chptr points to %x containing %c\n", chptr, *chptr);
+
+		chpt2 = &chptr;
+
+		printf("chpt2 points to %x containing %x containing %c\n", chpt2, *chpt2, **chpt2);
+
+
+		chptr = "STRING";
+		/* S T R I N G */
+		/* 0 1 2 3 4 5 */
+
+		printf("chptr points to %x containing ", chptr);
+		putchar(*(chptr));
+		putchar(*(chptr + 1));
+		putchar(*(chptr + 2));
+		putchar(*(chptr + 3));
+		putchar(*(chptr + 4));
+		putchar(*(chptr + 5));
+
+		printf("\nchpt2 points to chptr containing ");
+		putchar(*(*chpt2));
+		putchar(*(*chpt2 + 1));
+		putchar(*(*chpt2 + 2));
+		putchar(*(*chpt2 + 3));
+		putchar(*(*chpt2 + 4));
+		putchar(*(*chpt2 + 5));
+		putchar('\n');
+
+		printf("\n");
+		printf("\n");
+		printf("\n");
+
+		printf("%d\n", -0 / 2);
+	}
 
 	return 0;
 
@@ -89,4 +107,23 @@ int main()
 	printf("\n\t>");
 	getchar();
 	return 0;
+}
+
+
+
+unsigned long ptwo_round(unsigned long x)
+{
+	unsigned long rounded = x;										/* Initialize bytes_alloc with the file_size value. */
+	unsigned long	shift = 0;										/* Shift for first one of file size for rounding    */
+
+	while ((rounded >> 1) != 0)										/* Determine leftmost '1' bit of file size.		 	*/
+	{																/*													*/
+		rounded >>= 1;												/* Shift right until the next shift zeroes it.		*/
+		shift++;													/* Keep track of shifts.							*/
+	}																/*													*/
+	rounded <<= shift; 												/* Unshift. 										*/
+	if (x != rounded)												/* If not a power of two, round up.					*/
+		rounded <<= 1;
+
+	return rounded;
 }

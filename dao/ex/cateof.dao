@@ -1,0 +1,33 @@
+@ Cat that stops at EOF. Filter strategy - prints out one extra EOF.
+
+@ Init
+$$$>;:
+
+@ 0xxxxxx0 0xxxxxx1 1xxxxxx0 1xxxxxx1
+=*<
+@ 0xxxxxx0 					 1xxxxxx1
+$*=S*=<S
+@ 1bcdefg1
+((!))
+@ B1CDEFG1
+@ 11CDEFG1 01CDEFG1
+=*<
+@ 11CDEFG1
+(!)
+@ CD11EFG1
+@ 1D11EFG1 0D11EFG1
+=*<
+@ 1D11EFG1
+((!))
+@ D111EFG1
+@ 1111EFG1 0111EFG1
+=*<
+@ 1111EFG1
+!
+@ EFG11111
+=*<
+@ 1FG11111
+((!))=*<
+@ 11G11111
+(!)=*<
+@ 11111111

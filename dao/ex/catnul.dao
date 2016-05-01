@@ -1,0 +1,33 @@
+@ Cat that stops at NUL. Filter strategy - prints out one extra NUL.
+
+@ Init
+$$$>;:
+
+@ 0xxxxxx0 0xxxxxx1 1xxxxxx0 1xxxxxx1
+=*<
+@ 0xxxxxx0 					 1xxxxxx1
+$*<S
+@ 0bcdefg0
+((!))
+@ B0CDEFG0
+@ 00CDEFG0 10CDEFG0
+*<
+@ 00CDEFG0
+(!)
+@ CD00EFG0
+@ 0D00EFG0 1D00EFG0
+*<
+@ 0D00EFG0
+((!))
+@ D000EFG0
+@ 0000EFG0 1000EFG0
+*<
+@ 0000EFG0
+!
+@ EFG00000
+*<
+@ 0FG00000
+((!))*<
+@ 00G00000
+(!)*<
+@ 00000000
