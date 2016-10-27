@@ -13,7 +13,7 @@ A		1010	:  		READS	[[]/[]]		Y					Y
 B		1011	S  		DEALC	[/[]]!          		Y				
 C		1100	[  		SPLIT	[]								Y		
 D		1101	*  		POLAR	[/[]!]          		Y				
-E		1110	$  		DOALC	[/[]]							Y
+E		1110	$  		DOALC	[/[]]							Y		
 F		1111	;  		INPUT	$[]S		Y			Y				
 
 LEVEL TABLE (Behavior of symbols at different levels)

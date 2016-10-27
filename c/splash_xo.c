@@ -1,5 +1,3 @@
-	#pragma      GCC diagnostic ignored"-Wparentheses"
-	#pragma      GCC diagnostic ignored  "-Wtrigraphs"
 	#include 								 <stdio.h>
 	int l=0,i,n=0,m=0,x=1<<6,ll=6>>!0,l91;int main() {
 	char* l9l = "$(*.)SS-*E.)(/.8'7*1).+=.,$/,E)&(/0.\
