@@ -1,0 +1,23 @@
+@ Helloworld 3: Now without null characters.
+
+@ )    ascend. Selecting 1 bit
+@ ))   select tetrad
+@ ))   select 4let size
+@ )))  entire first half
+@ /    go to second half
+@ (    select 3rd row
+@ :    print 3rd row
+@ /    select 4th row
+@ (    first 8 symbols (four bytes) of 4th row
+@ :    print
+@ /    last half of 4th row
+@ ((   first 2 symbols of 4th row
+@ :    print
+@ S    remove second half of TLP
+
+)))) )))) /(:/ (:/(
+(:S. .... .... ....
+
+@ Data
+%(># >[>[ >;/. ==>;
+=/>[ >%/! .:.. ....

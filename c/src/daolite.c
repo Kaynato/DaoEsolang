@@ -45,8 +45,21 @@ typedef Pathstrx* Path;
 
 static void interpret(char*);
 
-static void swaps(Path), later(Path), merge(Path), sifts(Path), delev(Path), equal(Path), halve(Path);
-static void uplev(Path), reads(Path), dealc(Path), split(Path), polar(Path), doalc(Path), input(Path), execs(Path, Path);
+static void swaps(Path);
+static void later(Path);
+static void merge(Path);
+static void sifts(Path);
+static void delev(Path);
+static void equal(Path);
+static void halve(Path);
+static void uplev(Path);
+static void reads(Path);
+static void dealc(Path);
+static void split(Path);
+static void polar(Path);
+static void doalc(Path);
+static void input(Path);
+static void execs(Path, Path);
 
 char 			getInput();
 char 			algn(Path);
@@ -101,16 +114,30 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
-#define rc(r,c) case c: return r;
-
 unsigned char getNybble(char ch)
 {
 	switch (ch)
 	{
-		rc(0x0, '.')	rc(0x1, '!')	rc(0x2, '/')	rc(0x3, ']': case ')')
-		rc(0x4, '%')	rc(0x5, '#')	rc(0x6, '>')	rc(0x7, '=')
-		rc(0x8, '(')	rc(0x9, '<')	rc(0xA, ':')	rc(0xB, 'S')
-		rc(0xC, '[')	rc(0xD, '*')	rc(0xE, '$')	rc(0xF, ';')
+		case '.': return 0x0;
+		case '!': return 0x1;
+		case '/': return 0x2;
+		case ']':
+		case ')': return 0x3;
+		
+		case '%': return 0x4;
+		case '#': return 0x5;
+		case '>': return 0x6;
+		case '=': return 0x7;
+		
+		case '(': return 0x8;
+		case '<': return 0x9;
+		case ':': return 0xA;
+		case 'S': return 0xB;
+		
+		case '[': return 0xC;
+		case '*': return 0xD;
+		case '$': return 0xE;
+		case ';': return 0xF;
 		default: return 0x0;
 	}
 }
@@ -195,18 +222,6 @@ char getInput()
 	return 0;
 }
 
-/***
- *    oooooooooooo ooooooooooooo   .oooooo.   
- *    `888'     `8 8'   888   `8  d8P'  `Y8b  
- *     888              888      888          
- *     888oooo8         888      888          
- *     888    "         888      888          
- *     888       o      888      `88b    ooo  
- *    o888ooooood8     o888o      `Y8bood8P'  
- *                                            
- */
-
-#define roc(o,v,c) case o:c=v; return &c;
 
 char *str_dup (char *s) {
     char *d = malloc (strlen (s) + 1);   /*Allocate memory			*/
@@ -244,7 +259,6 @@ char* l_to_str(unsigned long val, unsigned char len, unsigned char radix)
  *                                                                                                  
  */
 
-#define levlim(l)		if (PR_LEV >= l) return;
 #define P_LEN 			(path -> sel_length)
 #define P_IND 			(path -> sel_index)
 #define P_ALC 			(path -> prg_allocbits)
@@ -260,7 +274,7 @@ static void swaps(Path path)
 {
 	unsigned int i = 0;
 	unsigned long report = 0;
-	levlim(1)
+	if (PR_LEV >= 1) return;
 	if (P_LEN == 1)	return;
 	if (P_LEN <= BITS_IN_CELL)
 	{
@@ -286,7 +300,7 @@ static void later(Path path)
 
 static void merge(Path path)
 {
-	levlim(7)
+	if (PR_LEV >= 7) return;
 	if (P_LEN < P_ALC)
 	{
 		if (!algn(path))
@@ -305,7 +319,7 @@ static void sifts(Path path)
 {
 	unsigned long write = P_IND;
 	unsigned long read = 0;
-	levlim(5)
+	if (PR_LEV >= 5) return;
 	while(write<P_ALC)
 	{
 		if (write+read<P_ALC)
@@ -321,7 +335,7 @@ static void sifts(Path path)
 static void execs(Path path, Path caller)
 {
 	unsigned long tempNum1 = 0;																/* Expedite calculation								*/
-	levlim(8)																				/* Level operation checking							*/
+	if (PR_LEV >= 8) return;																				/* Level operation checking							*/
 	P_RUNNING = path;																		/* Set running 										*/
 
 	if (P_CHILD == NULL)																	/* If there is no child 							*/
@@ -375,14 +389,14 @@ static void delev(Path path)
 
 static void equal(Path path)
 {
-	levlim(5)
+	if (PR_LEV >= 5) return;
 	if (read_by_bit_index(path, P_IND, 1) ^ read_by_bit_index(path, P_IND + P_LEN - 1, 1))
 		skip();
 }
 
 static void halve(Path path)
 {
-	levlim(7)
+	if (PR_LEV >= 7) return;
 	if (P_LEN > 1)
 	{
 		P_LEN /= 2;
@@ -396,7 +410,7 @@ static void halve(Path path)
 
 static void uplev(Path path)
 {
-	levlim(9)
+	if (PR_LEV >= 9) return;
 	PR_LEV++;
 	(P_RUNNING->prg_index) = PR_START - 1;
 }
@@ -404,7 +418,7 @@ static void uplev(Path path)
 static void reads(Path path)
 {
 	long pos = P_IND;
-	levlim(6)
+	if (PR_LEV >= 6) return;
 	if (P_LEN < 8)
 	{
 		char* out = bin(read_by_bit_index(path, pos, P_LEN));
@@ -417,7 +431,7 @@ static void reads(Path path)
 
 static void dealc(Path path)
 {
-	levlim(2)
+	if (PR_LEV >= 2) return;
 	if (P_ALC == 1)
 	{
 		int report = read_by_bit_index(path, 0, 1);
@@ -478,7 +492,7 @@ static void split(Path path)
 
 static void polar(Path path)
 {
-	levlim(3)
+	if (PR_LEV >= 3) return;
 	if (!(read_by_bit_index(path, P_IND, 1) && !read_by_bit_index(path, P_IND + P_LEN - 1, 1)))
 		skip();
 }
@@ -487,7 +501,7 @@ static void doalc(Path path)
 {
 	unsigned long new_cell_count = 0;
 	unsigned long* new_data_pointer = NULL;
-	levlim(1)
+	if (PR_LEV >= 1) return;
 		P_ALC <<= 1;
 
 	if (P_ALC <= BITS_IN_CELL)
@@ -517,7 +531,7 @@ static void doalc(Path path)
 static void input(Path path)
 {
 	int i = P_IND;
-	levlim(6)
+	if (PR_LEV >= 6) return;
 	if (P_LEN < 8)
 	{
 		write_by_bit_index(path, P_IND, P_LEN, getInput());

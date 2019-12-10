@@ -180,8 +180,6 @@ $$$
 @ By golly, terminate
 SSSSSSS
 
-
-
 @ The following comments have been scrapped. They were an overcomplicated way to do bit-checking.
 
 	@ Construct program in partition to switch the data to the exit value 11000011
@@ -208,6 +206,5 @@ SSSSSSS
 
 	@ 0000 0001 0010 0011 0100 0101 0110 0111 1000 1001 1010 1011 1100 1101 1110 1111 *[*]
 	@ 0000 0001 0010 0011 0100 0101 0110 0111      1001      1011 1100 1101      1111
-
 
 @ ..01'''' ..11''''

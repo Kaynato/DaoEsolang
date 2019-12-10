@@ -21,16 +21,16 @@
 #undef l1l
 #undef l11
 
-/*
-	Tools involved in the creation:
-	Wolfram Mathematica:
-		RatFit[x_, y_] := (a*x + b)/(x - c) == y;
-		Solve[RatFit[x, y] /. Solve[{RatFit[670, 68],
-		RatFit[678, 65],RatFit[686, 79]}, {a,b, c}],y]
-	Excel:
-		For mapping the cycle of added char-values to
-		the required char-values.
-	Paper and pencil:
-		For determining the permutation cycle for the
-		cycle of ' ', '=', '#'.
-*/
+// Make with gcc -trigraphs splash_o.c
+	
+// 	Tools involved in the creation:
+// 	Wolfram Mathematica:
+// 		RatFit[x_, y_] := (a*x + b)/(x - c) == y;
+// 		Solve[RatFit[x, y] /. Solve[{RatFit[670, 68],
+// 		RatFit[678, 65],RatFit[686, 79]}, {a,b, c}],y]
+// 	Excel:
+// 		For mapping the cycle of added char-values to
+// 		the required char-values.
+// 	Paper and pencil:
+// 		For determining the permutation cycle for the
+// 		cycle of ' ', '=', '#'.

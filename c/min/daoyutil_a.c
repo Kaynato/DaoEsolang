@@ -15,7 +15,7 @@
 							  z(d*D,d{D        X;D Z;/***************/D h;
 							   char v; D   A }_,O{_*Y;_*U}T)_*I(),*L (_*,
 							   _*);T*            Q;/*********/FILE*o,*i;
-								int main(        int/******/argc,char**                        argv){O
+								int main(        int/******/argc,char**                        argv){o
 								  =stdout;       P(/*****/argc>1,0)P(                     i=fopen(argv[1
 									],S+17),    23)/***/while(argc-->                  2)if(!argv[argc][0
 										]-45)switch(argv[argc][1])                   {case 120:b=1;break;
@@ -28,18 +28,18 @@
 															   11          *2)while((S[16]=fgetc(i))+1)
 																if       (e&&S[16]-10&&S[16]-13&&S[16
 					 ]-                                          32     )h(S[16]);fclose(i);E(I()
-					  );_(0)                                      }V( _*n){if(Q->U){Q->U->A=
-					  n;n->h=Q->                                   U;}else Q->Y
+					  );_(0)									  }V( _*n){if(Q->U){Q->U->A=
+					  n;n->h=Q->								   U;}else Q->Y
 					  =n;Q->U=n;}_*u(){_*y=Q    ->Y;if(Q->Y==Q->U){Q->U
 					   =Q->Y=y->A=y->h=0;_(y)}Q->Y=y->A;y->A=Q->Y->h=
 						 0;_(y)}O(){Q=0;P(Q=malloc(sizeof(T)),0)Q->U =
-							Q->Y=0;_(Q)}_*a(){_*n=0;P(n=malloc      (
-							   sizeof(_)),00)n->A=n->h=n->Z        =n
-								   ->X=0;g=0;_(n)}_*              v(
+							Q->Y=0;_(Q)}_*a(){_*n=0;P(n=malloc		(
+							   sizeof(_)),00)n->A=n->h=n->Z		   =n
+								   ->X=0;g=0;_(n)}_*			  v(
 																 int
 																 v){
 																  _*n
-							   =a();P                             (n,0
+							   =a();P							   (n,0
 							 )g=v;_(n)                              }_*
 							I(){while(                               Q->
 							Y-Q->U)V(  L(u(),u()));                   _(Q

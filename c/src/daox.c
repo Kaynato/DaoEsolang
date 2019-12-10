@@ -306,7 +306,7 @@ static void interpret(char* inputFileName)
 		}
 	}
 
-	verbosely printf("(%d bytes)\n\n", (dao->prg_allocbits) / 8);			/* If verbose, output number of bytes.				*/
+	verbosely printf("(%d bytes)\n\n", (dao->prg_allocbits) / 8);	/* If verbose, output number of bytes.				*/
 	P_RUNNING = dao;												/* For the sake of levlim							*/
 	
 	/***************************************************** EXECUTE ******************************************************/
@@ -765,8 +765,8 @@ static int setargs(char *args, char **argv)
 			++args;
 		count++;
 	}
-	   return count;
-	}
+	return count;
+}
 
 char **parsedargs(char *args, int *argc)
 {

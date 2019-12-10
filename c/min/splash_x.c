@@ -14,8 +14,11 @@ int main() {
 	1.&(/0);**5,$;-.3'(91)3-*3.$?/.[?(6.)+(*5)$5E.MK";
 	str_size = 251;
 	for(i = 0; index < str_size; index++) {
+		/*Skip tabs*/
 		if(!((index-36)%50))
 			index++;
+
+		
 		for(amt_print = m + data[index] - data[i++ % 5]; m < amt_print; m++) {
 			if(!(m++%33))
 				for(l = str_size - 3 + !(m - 1); str_size - l;) {

@@ -1,6 +1,6 @@
 99 Bottles of Beer on the wall
 
-This will be the cause of great regret, won't it?
+This will be the cause of great regret.
 
 GENERALIZED STRUCTURE:
 
