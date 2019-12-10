@@ -52,6 +52,7 @@ type
   Reader = object
     ## The reader reads instructions from the exec node
     ##   and operates on the Data node.
+    root:         DaoNode      ##  The root of the path operated on by the Reader
     ## Exec node - typically points to owner's parent Path
     oplevel:      uint8        ##  Operating level
     exec:         DaoNode      ##  Location of execution node
@@ -82,7 +83,9 @@ when DEBUG:
   from strutils import toHex, toBin
 
   proc `$`(node: DaoNode): string =
-    result.add($node.kind)
+    if node == nil:
+      Unreachable("DEBUG: Tried to print nil node")
+    result.add($(node.kind))
     let treePos = (if node.parent != nil: "CHLD" else: "ROOT")
     result.add(fmt"({treePos}: pow: {node.pow}")
     case node.kind:
@@ -110,7 +113,7 @@ proc initPath(): Path =
   result.depth = 0
   result.root = DaoNode(kind: Dnk8, parent: nil, pow: 0, val: 0'u8)
   result.exec_start = nil
-  result.reader = Reader(node: result.root, oplevel: 0, mode: RmPOS, pow: 0, idx: 0)
+  result.reader = Reader(root: result.root, node: result.root, mode: RmPOS, pow: 0, idx: 0, oplevel: 0)
 
 ## Functions
 
@@ -135,11 +138,22 @@ proc swaps(p: Path) =
   case node.kind:
     of DnkMIX: swap(node.lc, node.rc)
     of Dnk8:
-      if node.pow == 3:   node.val = (node.val shl 4'u8) or (node.val and 0xF0'u8 shr 4'u8)
-      elif node.pow == 2: node.val = (node.val shl 2) or (node.val and 0b1100'u8 shr 2) and 0xF'u8
-      elif node.pow == 1: node.val = node.val xor 0b11
-      elif node.pow == 0: discard
-      else: Unreachable("SWAPS: Impossible Dnk8 pow.")
+      if p.reader.pow == 3: # RmNODE
+        node.val = (node.val shl 4 and 0xF0'u8) or (node.val shr 4)
+      elif p.reader.pow == 2: # RmPOS
+        let bitsFromRight = 4 * (1 - p.reader.idx)
+        let writeMask = 0b1111'u8 shl bitsFromRight
+        let shifted = (node.val shl 2 and 0b11001100'u8) or (node.val shr 2 and 0b00110011'u8)
+        node.val = (node.val and not writeMask) or (shifted and writeMask)
+      elif p.reader.pow == 1: # RmPOS
+        let bitsFromRight = 2 * (3 - p.reader.idx)
+        let writeMask = 0b11'u8 shl bitsFromRight
+        let shifted = (node.val shl 1 and 0b10101010'u8) or (node.val shr 1 and 0b01010101'u8)
+        node.val = (node.val and not writeMask) or (shifted and writeMask)
+      elif node.pow == 0: # RmPOS, swap bit is discard
+        discard
+      else:
+        Unreachable("SWAPS: Impossible Dnk8 pow.")
     else: discard
 
 proc later(p: Path) =
@@ -155,7 +169,12 @@ proc later(p: Path) =
         else:
           Unreachable("LATER: Unchained node.")
     of RmPOS:
-      Todo("Later in RmPOS.")
+      if (p.reader.idx and 1'u8) != 0:
+        # If on the second virtual half of some node, merge
+        p.merge
+      else:
+        # Otherwise, go to the right half
+        inc p.reader.idx
   else:
     Todo("Linear Traversal")
 
@@ -164,7 +183,8 @@ proc merge(p: Path) =
   ## Ascend reader
   case p.reader.mode:
     of RmNODE:
-      p.reader.node = p.reader.node.parent
+      if p.reader.node.parent != nil:
+        p.reader.node = p.reader.node.parent
     of RmPOS:
       if p.reader.pow == p.reader.node.pow:
         # Only should happen when inside a Dnk8 of pow < 3.
@@ -203,6 +223,7 @@ proc halve(p: Path) =
         if node.pow == 0 and p.child != nil:
           ## Descend into bit -> Select child path
           p.reader.node = p.child.root
+          p.reader.root = p.child.root
           p.reader.mode = RmNODE
         else:
           p.reader.pow = node.pow - 1
@@ -213,9 +234,10 @@ proc halve(p: Path) =
       ## Descend into bit -> Select child path
       if p.child != nil:
         p.reader.node = p.child.root
+        p.reader.root = p.child.root
         p.reader.mode = RmNODE
     else:
-      p.reader.pow = node.pow - 1
+      dec p.reader.pow
       p.reader.idx = p.reader.idx shl 1
 
 # proc uplev(p: Path) # TODO
@@ -254,13 +276,64 @@ proc reads(p: Path) =
         else: Unreachable("READS: Impossible Reader pow.")
 
 # proc dealc(p: Path) # TODO
-# proc split(p: Path) # TODO
+
+proc split(p: Path) =
+  if p.reader.oplevel > 6'u8: return
+  if p.reader.oplevel == 0'u8:
+    let node = p.reader.node
+    case p.reader.mode:
+    of RmNODE:
+      case node.kind:
+      of DnkMIX:
+        if node.pow > 4:
+          if node.lc.kind != DnkPOS: node.lc = DaoNode(kind: DnkPOS, parent: node, pow: node.pow - 1)
+          if node.rc.kind != DnkNEG: node.rc = DaoNode(kind: DnkNEG, parent: node, pow: node.pow - 1)
+        elif node.pow == 4:
+          if node.lc.kind != DnkPOS: node.lc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0xFF'u8)
+          if node.rc.kind != DnkNEG: node.rc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0x00'u8)
+        else: Unreachable("SPLIT: Illegal DnkMIX of pow <= 3")
+      of DnkNEG, DnkPOS:
+        # Overwrite the node
+        let newNode = DaoNode(kind: DnkMIX, parent: node.parent, pow: node.pow, lc: nil, rc: nil)
+        if node.pow > 4:
+          newNode.lc = DaoNode(kind: DnkPOS, parent: newNode, pow: node.pow - 1)
+          newNode.rc = DaoNode(kind: DnkNEG, parent: newNode, pow: node.pow - 1)
+        elif node.pow == 4:
+          newNode.lc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0xFF'u8)
+          newNode.rc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0x00'u8)
+        else: Unreachable("SPLIT: Illegal DnkMIX of pow <= 3")
+        p.reader.node = newNode
+      of Dnk8:
+        node.val = 0xF0'u8
+    of RmPOS:
+      case node.kind:
+        of Dnk8:
+          if p.reader.pow == 2:
+            node.val = node.val and (0x0F'u8 shl (4 * p.reader.idx))
+            node.val = node.val or (0b1100'u8 shl (4 * (1 - p.reader.idx)))
+          elif p.reader.pow == 1:
+            let bitsFromRight = 2 * (3 - p.reader.idx)
+            node.val = node.val and not (0b11'u8 shl bitsFromRight)
+            node.val = node.val or (0b10'u8 shl bitsFromRight)
+          elif p.reader.pow == 0:
+            discard # Splitting a bit is a noop
+          else:
+            Unreachable("SPLIT: Impossible Reader pow.")
+        of DnkNEG:
+          Todo("Heterogenize DnkNEG Interior")
+        of DnkPOS:
+          Todo("Heterogenize DnkPOS Interior")
+        of DnkMIX: Unreachable("SPLIT: POS mode inside DnkMIX")
+  p.halve
+
+
 # proc polar(p: Path) # TODO
 
 proc doalc(p: Path) =
   if p.reader.oplevel > 0'u8: return
+  # Allocation is performed on the root of the reader's node, not the executing path.
   # Create parent
-  let root = p.root
+  let root = p.reader.root
   let parent = case root.kind:
     of DnkMIX, DnkPOS:
       DaoNode(kind: DnkMIX, pow: root.pow + 1, parent: nil, lc: root, rc: DaoNode(kind: DnkNEG, pow: root.pow, parent: nil))
@@ -282,7 +355,7 @@ proc doalc(p: Path) =
     if parent.kind == DnkMIX:
       parent.rc.parent = parent
     root.parent = parent
-    p.root = parent
+    p.reader.root = parent
   p.merge
 
 # proc input(p: Path) # TODO
@@ -290,26 +363,50 @@ proc doalc(p: Path) =
 when isMainModule:
 
   var path = initPath()
-  path.swaps
-  path.reads
-  echo "\n", path.reader.addr
+  const prg = "$$$(([]!)/([])):((/[])/([]!/[]!)):(/[])::[/([]!/[])]!:[[[]]!]:[([]!)/[/[]!]!]:[/([]!/[])]!:[([]!)/(/[])]:((/[])/[]):(/([]!)):([[]]!/[[]!]!):[[[]/[]]]!:"
 
-  path.doalc
-  path.reads
-  echo "\n", path.reader.addr
+  for c in prg:
+    # echo c, " on ", path.reader.addr
+    case c:
+      of '.': discard
+      of '!': path.swaps
+      of '/': path.later
+      of ']', ')': path.merge
+      # of '%': path.sifts
+      # of '#': path.execs
+      # of '>': path.delev
+      # of '=': path.equal
+      of '(': path.halve
+      # of '<': path.uplev
+      of ':': path.reads
+      # of 'S': path.dealc
+      of '[': path.split
+      # of '*': path.polar
+      of '$': path.doalc
+      # of ';': path.input
+      else: discard
+    # echo c, " to ", path.reader.addr
 
-  path.doalc
-  path.reads
-  echo "\n", path.reader.addr
+  # path.swaps
+  # path.reads
+  # echo "\n", path.reader.addr
 
-  path.doalc
-  path.reads
-  echo "\n", path.reader.addr
+  # path.doalc
+  # path.reads
+  # echo "\n", path.reader.addr
 
-  path.doalc
-  path.reads
-  echo "\n", path.reader.addr
+  # path.doalc
+  # path.reads
+  # echo "\n", path.reader.addr
 
-  path.doalc
-  path.reads
-  echo "\n", path.reader.addr
+  # path.doalc
+  # path.reads
+  # echo "\n", path.reader.addr
+
+  # path.doalc
+  # path.reads
+  # echo "\n", path.reader.addr
+
+  # path.doalc
+  # path.reads
+  # echo "\n", path.reader.addr
