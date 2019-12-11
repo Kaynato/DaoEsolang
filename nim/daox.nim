@@ -21,6 +21,7 @@
 ## 
 
 # import bitops
+import deques
 from util import toBin2, toBin4
 
 const
@@ -37,10 +38,10 @@ type
   DaoNode = ref object
     parent: DaoNode
     pow: uint64               ##  2^pow bits "contained" by this node.
+    p, n: bool                ##  Front and last bit of node
     case kind: DaoNodeKind
       of DnkMIX:
         lc, rc: DaoNode
-        # is_equal, is_polar: bool
       of Dnk8:
         val: uint8
       of DnkNEG, DnkPOS: discard
@@ -50,24 +51,25 @@ type
     RmPOS                      ##  On interior of uint8 node (8/4/2) or uniform node (POS/NEG)
 
   Reader = object
-    ## The reader reads instructions from the exec node
-    ##   and operates on the Data node.
-    root:         DaoNode      ##  The root of the path operated on by the Reader
-    ## Exec node - typically points to owner's parent Path
-    oplevel:      uint8        ##  Operating level
-    exec:         DaoNode      ##  Location of execution node
-    ## Data node - typically points to owner Path
+    ## The reader allows for traversal of DaoNodes.
+    path:         Path         ##  The path operated on by the Reader
     node:         DaoNode      ##  Location of data node
     mode:         ReaderMode   ##  If in the interior of a complex node
     pow:          uint64       ##  record pow2
     idx:          uint64       ##  and index from left at that resolution
 
+  Executor = object
+    ## The executor reads instructions from a tracked location in the exec node
+    ##     and operates on the data node.
+    oplevel:      uint8        ##  Operating level
+    execStart:    Reader       ##  Location where execution began (return to when UPLEV)
+    exec:         Reader       ##  Tracker for execution
+    data:         Reader       ##  Tracker for target of execution
+
   Path = ref object
     owner, child: Path         ##  Owner and Child programs (may be nil)
     depth:        uint64       ##  How deep is this in the program tree?
-    root:         DaoNode      ##  Points to the root of the data
-    exec_start:   DaoNode      ##  Where we started running
-    reader:       Reader       ##  Program Pointer operating ON this path.
+    dataRoot:     DaoNode      ##  Points to the root of the data owned by this path
 
   UnreachableError = object of Exception
   NotImplementedError = object of Exception
@@ -102,51 +104,54 @@ when DEBUG:
 
   proc `$`(reader: ptr Reader): string =
     case reader.mode:
-      of RmNODE: fmt"Read<{reader.oplevel}>[{$reader.node}]"
-      of RmPOS: fmt"Read<{reader.oplevel}>(p{reader.pow}, i{reader.idx})[{$reader.node}]"
+      of RmNODE: fmt"Read[{$reader.node}]"
+      of RmPOS: fmt"Read(p{reader.pow}, i{reader.idx})[{$reader.node}]"
 
-proc initPath(): Path =
-  ## Initialize a new path as the top level program.
+proc initPath(parent: Path = nil, dataRoot: DaoNode = nil): Path =
+  ## Initialize a new path from a parent, or if parentless, the TLP.
   result.new
-  result.owner = nil
+  result.owner = parent
   result.child = nil
-  result.depth = 0
-  result.root = DaoNode(kind: Dnk8, parent: nil, pow: 0, val: 0'u8)
-  result.exec_start = nil
-  result.reader = Reader(root: result.root, node: result.root, mode: RmPOS, pow: 0, idx: 0, oplevel: 0)
+  if parent != nil:
+    result.depth = parent.depth + 1
+    parent.child = result
+  else:
+    result.depth = 0
+  if dataRoot == nil: result.dataRoot = DaoNode(kind: Dnk8, parent: nil, pow: 0, val: 0'u8)
+  else:               result.dataRoot = dataRoot
 
 ## Functions
 
-proc swaps(p: Path)
-proc later(p: Path)
-proc merge(p: Path)
-# proc sifts(p: Path)
-# proc execs(p: Path)
-proc delev(p: Path)
-# proc equal(p: Path)
-proc halve(p: Path)
-# proc uplev(p: Path)
-proc reads(p: Path)
-# proc dealc(p: Path)
-# proc split(p: Path)
-# proc polar(p: Path)
-proc doalc(p: Path)
+proc swaps(EXEC: var Executor)
+proc later(EXEC: var Executor)
+proc merge(EXEC: var Executor)
+# proc sifts(EXEC: var Executor)
+proc execs(EXEC: var Executor, STACK: var seq[Executor])
+proc delev(EXEC: var Executor)
+# proc equal(EXEC: var Executor)
+proc halve(EXEC: var Executor)
+# proc uplev(EXEC: var Executor)
+proc reads(EXEC: var Executor)
+# proc dealc(EXEC: var Executor)
+# proc split(EXEC: var Executor)
+# proc polar(EXEC: var Executor)
+proc doalc(EXEC: var Executor)
 
-proc swaps(p: Path) =
-  if p.reader.oplevel > 0'u8: return
-  let node = p.reader.node
+proc swaps(EXEC: var Executor) =
+  if EXEC.oplevel > 0'u8: return
+  let node = EXEC.data.node
   case node.kind:
     of DnkMIX: swap(node.lc, node.rc)
     of Dnk8:
-      if p.reader.pow == 3: # RmNODE
+      if EXEC.data.pow == 3: # RmNODE
         node.val = (node.val shl 4 and 0xF0'u8) or (node.val shr 4)
-      elif p.reader.pow == 2: # RmPOS
-        let bitsFromRight = 4 * (1 - p.reader.idx)
+      elif EXEC.data.pow == 2: # RmPOS
+        let bitsFromRight = 4 * (1 - EXEC.data.idx)
         let writeMask = 0b1111'u8 shl bitsFromRight
         let shifted = (node.val shl 2 and 0b11001100'u8) or (node.val shr 2 and 0b00110011'u8)
         node.val = (node.val and not writeMask) or (shifted and writeMask)
-      elif p.reader.pow == 1: # RmPOS
-        let bitsFromRight = 2 * (3 - p.reader.idx)
+      elif EXEC.data.pow == 1: # RmPOS
+        let bitsFromRight = 2 * (3 - EXEC.data.idx)
         let writeMask = 0b11'u8 shl bitsFromRight
         let shifted = (node.val shl 1 and 0b10101010'u8) or (node.val shr 1 and 0b01010101'u8)
         node.val = (node.val and not writeMask) or (shifted and writeMask)
@@ -156,96 +161,133 @@ proc swaps(p: Path) =
         Unreachable("SWAPS: Impossible Dnk8 pow.")
     else: discard
 
-proc later(p: Path) =
-  if p.reader.oplevel < 4'u8:
+proc later(EXEC: var Executor) =
+  if EXEC.oplevel < 4'u8:
     ## Ordinary LATER
-    case p.reader.mode:
+    case EXEC.data.mode:
     of RmNODE:
-      if p.reader.node.parent == nil or p.reader.node == p.reader.node.parent.rc:
-        p.merge
+      if EXEC.data.node.parent == nil or EXEC.data.node == EXEC.data.node.parent.rc:
+        merge(EXEC)
       else:
-        if p.reader.node == p.reader.node.parent.lc:
-          p.reader.node = p.reader.node.parent.rc
+        if EXEC.data.node == EXEC.data.node.parent.lc:
+          EXEC.data.node = EXEC.data.node.parent.rc
         else:
           Unreachable("LATER: Unchained node.")
     of RmPOS:
-      if (p.reader.idx and 1'u8) != 0:
-        # If on the second virtual half of some node, merge
-        p.merge
-      else:
-        # Otherwise, go to the right half
-        inc p.reader.idx
+      # If on the second virtual half of some node, merge
+      if (EXEC.data.idx and 1'u8) != 0: merge(EXEC)
+      # Otherwise, go to the right half
+      else: inc EXEC.data.idx
   else:
     Todo("Linear Traversal")
 
-proc merge(p: Path) =
-  if p.reader.oplevel > 6'u8: return
-  ## Ascend reader
-  case p.reader.mode:
+proc merge(EXEC: var Executor) =
+  if EXEC.oplevel > 6'u8: return
+  ## Ascend EXEC.data
+  case EXEC.data.mode:
     of RmNODE:
-      if p.reader.node.parent != nil:
-        p.reader.node = p.reader.node.parent
+      if EXEC.data.node.parent != nil:
+        EXEC.data.node = EXEC.data.node.parent
     of RmPOS:
-      if p.reader.pow == p.reader.node.pow:
+      if EXEC.data.pow == EXEC.data.node.pow:
         # Only should happen when inside a Dnk8 of pow < 3.
-        if p.reader.node.parent == nil:
+        if EXEC.data.node.parent == nil:
           # We should be at the top.
-          if p.owner != nil:
+          if EXEC.data.path.owner != nil:
             # Try to go to the first BIT of the upper program.
             Todo("Select first bit of upper program.")
         else:
           Unreachable("MERGE: RmPOS Pow match but parent is not nil.")
       else:
-        p.reader.pow += 1
-        p.reader.idx = p.reader.idx div 2
-        if p.reader.pow > 2 and p.reader.pow == p.reader.node.pow:
-          p.reader.mode = RmNODE
+        EXEC.data.pow += 1
+        EXEC.data.idx = EXEC.data.idx div 2
+        if EXEC.data.pow > 2 and EXEC.data.pow == EXEC.data.node.pow:
+          EXEC.data.mode = RmNODE
 
-# proc sifts(p: Path) # TODO
-# proc execs(p: Path; a3: Path) # TODO
+# proc sifts() # TODO
 
-proc delev(p: Path) =
-  if p.reader.oplevel > 0'u8:
-    dec p.reader.oplevel
+#[ 
+  When execs,
+    Push the current LIVE_READER (Start Location, Instruction Reader, Data Path) to the storage stack.
+    Create a new Reader for LIVE_READER:
+      new start location = leftmost pow 3 node at instruction reader / round up
+        if cannot round up, the instruction pointer is "crushed" and execs is nop
+      instruction reader is cloned from the current Reader
+        and navigates to the new start location
+      data path is the CHILD of the path which has the data the instruction reader points to.
 
-# proc equal(p: Path) # TODO
+  Something to think about is
+    when you call EXECS such that
+    the data path is an existing path, in which case... dangers arise
 
-proc halve(p: Path) =
+  When a program finishes, should pop from LIVE_STACK. If empty, terminate.
+
+# TODO
+  Consider making "path in node" where each call of EXECS produces a new Path....
+
+]#
+
+proc execs(EXEC: var Executor, STACK: var seq[Executor]) =
+  if EXEC.oplevel > 7'u8: return
+  # Store the old reader
+  STACK.add(EXEC)
+
+  # If child of target path is nil, create a new child
+  if EXEC.data.path.child == nil:
+    let child = initPath(parent = EXEC.data.path)
+
+  # Copy the reader and navigate to the correct location
+  var reader = EXEC.data
+  # TODO
+
+  # Create a new executor, cloning the current reader for its position
+  var newExec = Executor(oplevel: 0, )
+  # child.reader = Reader(path: child, node: child.dataRoot, mode: RmPOS, pow: 0, idx: 0, oplevel: 0)
+
+proc delev(EXEC: var Executor) =
+  if EXEC.oplevel > 0'u8:
+    dec EXEC.oplevel
+
+# proc equal() # TODO
+
+proc halve(EXEC: var Executor) =
   ## Descend into node left half.
-  if p.reader.oplevel > 6'u8: return
-  let node = p.reader.node
-  case p.reader.mode:
+  if EXEC.oplevel > 6'u8: return
+  let node = EXEC.data.node
+  case EXEC.data.mode:
   of RmNODE:
     case node.kind:
       of DnkMIX:
-        p.reader.node = node.lc
+        EXEC.data.node = node.lc
       of Dnk8, DnkPOS, DnkNEG:
-        if node.pow == 0 and p.child != nil:
+        let child = EXEC.data.path.child
+        if node.pow == 0 and child != nil:
           ## Descend into bit -> Select child path
-          p.reader.node = p.child.root
-          p.reader.root = p.child.root
-          p.reader.mode = RmNODE
+          EXEC.data.node = child.dataRoot
+          EXEC.data.path = child
+          EXEC.data.mode = RmNODE
         else:
-          p.reader.pow = node.pow - 1
-          p.reader.idx = 0
-          p.reader.mode = RmPOS
+          EXEC.data.pow = node.pow - 1
+          EXEC.data.idx = 0
+          EXEC.data.mode = RmPOS
   of RmPOS:
-    if p.reader.pow == 0:
+    if EXEC.data.pow == 0:
       ## Descend into bit -> Select child path
-      if p.child != nil:
-        p.reader.node = p.child.root
-        p.reader.root = p.child.root
-        p.reader.mode = RmNODE
+      let child = EXEC.data.path.child
+      if child != nil:
+        EXEC.data.node = child.dataRoot
+        EXEC.data.path = child
+        EXEC.data.mode = RmNODE
     else:
-      dec p.reader.pow
-      p.reader.idx = p.reader.idx shl 1
+      dec EXEC.data.pow
+      EXEC.data.idx = EXEC.data.idx shl 1
 
-# proc uplev(p: Path) # TODO
+# proc uplev() # TODO
 
-proc reads(p: Path) =
-  if p.reader.oplevel > 5'u8: return
-  let node = p.reader.node
-  case p.reader.mode:
+proc reads(EXEC: var Executor) =
+  if EXEC.oplevel > 5'u8: return
+  let node = EXEC.data.node
+  case EXEC.data.mode:
   of RmNODE:
     case node.kind:
       of DnkMIX:
@@ -267,21 +309,21 @@ proc reads(p: Path) =
         Unreachable("READS: Accessed DnkMIX in POS mode.")
       of DnkNEG, DnkPOS:
         let val = (if node.kind == DnkPOS: 0xFF.char else: 0x00.char)
-        for _ in p.reader.idx ..< (1'u64 shl (p.reader.pow - 3)):
+        for _ in EXEC.data.idx ..< (1'u64 shl (EXEC.data.pow - 3)):
           stdout.write val
       of Dnk8:
-        if p.reader.pow == 0:   stdout.write "01"[node.val shr (8 - p.reader.idx) and 1'u8]
-        elif p.reader.pow == 1: stdout.write (node.val shr (4 - p.reader.idx) and 0b11'u8).toBin2
-        elif p.reader.pow == 2: stdout.write (node.val shr (2 - p.reader.idx) and 0xF'u8).toBin4
-        else: Unreachable("READS: Impossible Reader pow.")
+        if EXEC.data.pow == 0:   stdout.write "01"[node.val shr (8 - EXEC.data.idx) and 1'u8]
+        elif EXEC.data.pow == 1: stdout.write (node.val shr (4 - EXEC.data.idx) and 0b11'u8).toBin2
+        elif EXEC.data.pow == 2: stdout.write (node.val shr (2 - EXEC.data.idx) and 0xF'u8).toBin4
+        else: Unreachable("READS: Impossible EXEC.Reader pow.")
 
-# proc dealc(p: Path) # TODO
+# proc dealc() # TODO
 
-proc split(p: Path) =
-  if p.reader.oplevel > 6'u8: return
-  if p.reader.oplevel == 0'u8:
-    let node = p.reader.node
-    case p.reader.mode:
+proc split(EXEC: var Executor) =
+  if EXEC.oplevel > 6'u8: return
+  if EXEC.oplevel == 0'u8:
+    let node = EXEC.data.node
+    case EXEC.data.mode:
     of RmNODE:
       case node.kind:
       of DnkMIX:
@@ -302,20 +344,20 @@ proc split(p: Path) =
           newNode.lc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0xFF'u8)
           newNode.rc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0x00'u8)
         else: Unreachable("SPLIT: Illegal DnkMIX of pow <= 3")
-        p.reader.node = newNode
+        EXEC.data.node = newNode
       of Dnk8:
         node.val = 0xF0'u8
     of RmPOS:
       case node.kind:
         of Dnk8:
-          if p.reader.pow == 2:
-            node.val = node.val and (0x0F'u8 shl (4 * p.reader.idx))
-            node.val = node.val or (0b1100'u8 shl (4 * (1 - p.reader.idx)))
-          elif p.reader.pow == 1:
-            let bitsFromRight = 2 * (3 - p.reader.idx)
+          if EXEC.data.pow == 2:
+            node.val = node.val and (0x0F'u8 shl (4 * EXEC.data.idx))
+            node.val = node.val or (0b1100'u8 shl (4 * (1 - EXEC.data.idx)))
+          elif EXEC.data.pow == 1:
+            let bitsFromRight = 2 * (3 - EXEC.data.idx)
             node.val = node.val and not (0b11'u8 shl bitsFromRight)
             node.val = node.val or (0b10'u8 shl bitsFromRight)
-          elif p.reader.pow == 0:
+          elif EXEC.data.pow == 0:
             discard # Splitting a bit is a noop
           else:
             Unreachable("SPLIT: Impossible Reader pow.")
@@ -324,16 +366,16 @@ proc split(p: Path) =
         of DnkPOS:
           Todo("Heterogenize DnkPOS Interior")
         of DnkMIX: Unreachable("SPLIT: POS mode inside DnkMIX")
-  p.halve
+  halve(EXEC)
 
 
-# proc polar(p: Path) # TODO
+# proc polar() # TODO
 
-proc doalc(p: Path) =
-  if p.reader.oplevel > 0'u8: return
+proc doalc(EXEC: var Executor) =
+  if EXEC.oplevel > 0'u8: return
   # Allocation is performed on the root of the reader's node, not the executing path.
   # Create parent
-  let root = p.reader.root
+  let root = EXEC.data.path.dataRoot
   let parent = case root.kind:
     of DnkMIX, DnkPOS:
       DaoNode(kind: DnkMIX, pow: root.pow + 1, parent: nil, lc: root, rc: DaoNode(kind: DnkNEG, pow: root.pow, parent: nil))
@@ -355,58 +397,120 @@ proc doalc(p: Path) =
     if parent.kind == DnkMIX:
       parent.rc.parent = parent
     root.parent = parent
-    p.reader.root = parent
-  p.merge
+    EXEC.data.path.dataRoot = parent
+  merge(EXEC)
 
-# proc input(p: Path) # TODO
+# proc input() # TODO
+
+proc symToVal(ch: char): uint8 =
+  ## Convert symbols into bytes
+  case ch:
+    of '.': 0x00'u8
+    of '!': 0x01'u8
+    of '/': 0x02'u8
+    of ']', ')': 0x03'u8
+    of '%': 0x04'u8
+    of '#': 0x05'u8
+    of '>': 0x06'u8
+    of '=': 0x07'u8
+    of '(': 0x08'u8
+    of '<': 0x09'u8
+    of ':': 0x0A'u8
+    of 'S': 0x0B'u8
+    of '[': 0x0C'u8
+    of '*': 0x0D'u8
+    of '$': 0x0E'u8
+    of ';': 0x0F'u8
+    else: 0x00'u8
+
+proc initTLP(hexData: seq[uint8]): Executor =
+  ## Convert seq of hexes into an equivalent Path
+  if hexData.len == 0: return
+
+  var nodes = initDeque[DaoNode]()
+
+  for i in countup(0, ((hexData.len + 1) div 2) - 1, 2):
+    let val = hexData[i] shl 4 or hexData[i+1]
+    nodes.addFirst(DaoNode(kind: Dnk8, pow: 3, val: val, parent: nil))
+
+  if hexData.len mod 2 == 1:
+    # Take care of remainder if it exists.
+    nodes.addFirst DaoNode(kind: Dnk8, pow: 3, val: hexData[^1] shl 4)
+
+  let execStart = nodes[0]
+
+  # Treeify.
+  while nodes.len > 1:
+    var lc = nodes.popLast()
+    let rc = nodes.popLast()
+    while lc.pow < rc.pow:
+      # Need zero padding on right
+      if (lc.kind == DnkNEG or (lc.kind == Dnk8 and lc.val == 0'u8)):
+        # If left is blank, just escalate
+        inc lc.pow
+      else:
+        # Otherwise, replace as lc of new mix parent with empty rc
+        lc = DaoNode(kind: DnkMIX, pow: lc.pow + 1, lc: lc)
+        lc.rc = DaoNode(kind: DnkNEG, pow: lc.pow - 1)
+    if lc.pow > rc.pow:
+      Unreachable("initTLP: ILLEGAL - First child had greater pow than second.")
+    else:
+      # Equal power
+      if (lc.kind == DnkNEG or (lc.kind == Dnk8 and lc.val == 0'u8)) and
+         (rc.kind == DnkNEG or (rc.kind == Dnk8 and rc.val == 0'u8)):
+        nodes.addFirst DaoNode(kind: DnkNEG, pow: lc.pow + 1)
+      elif (lc.kind == DnkPOS or (lc.kind == Dnk8 and lc.val == 0xFF'u8)) and
+           (rc.kind == DnkPOS or (rc.kind == Dnk8 and rc.val == 0xFF'u8)):
+        nodes.addFirst DaoNode(kind: DnkPOS, pow: lc.pow + 1)
+      else:
+        let parent = DaoNode(kind: DnkMIX, pow: lc.pow + 1, parent: nil, lc: lc, rc: rc)
+        lc.parent = parent
+        rc.parent = parent
+        nodes.addFirst parent
+
+  # Now we have made the tree for the TLP.
+  var tlp = initPath(dataRoot = nodes.popLast())
+
+  # Special case child construction
+  var child = initPath(parent = tlp)
+
+  # Special case executor construction
+  result.oplevel = 0
+  result.execStart = Reader(path: tlp, mode: RmNODE, node: execStart, pow: 3, idx: 0)
+  result.exec = Reader(path: tlp, mode: RmNODE, node: execStart, pow: 3, idx: 0)
+  result.data = Reader(path: child, mode: RmPOS, node: child.dataRoot, pow: 0, idx: 0)
 
 when isMainModule:
 
-  var path = initPath()
   const prg = "$$$(([]!)/([])):((/[])/([]!/[]!)):(/[])::[/([]!/[])]!:[[[]]!]:[([]!)/[/[]!]!]:[/([]!/[])]!:[([]!)/(/[])]:((/[])/[]):(/([]!)):([[]]!/[[]!]!):[[[]/[]]]!:"
+  var hexData: seq[uint8]
+  for c in prg:
+    hexData.add c.symToVal
+
+  var EXEC = hexData.initTLP
+
+  # Then call path.execs...
+
+  # var path = initPath()
 
   for c in prg:
-    # echo c, " on ", path.reader.addr
+    # echo c, " on ", EXEC.reader.addr
     case c:
       of '.': discard
-      of '!': path.swaps
-      of '/': path.later
-      of ']', ')': path.merge
-      # of '%': path.sifts
-      # of '#': path.execs
-      # of '>': path.delev
-      # of '=': path.equal
-      of '(': path.halve
-      # of '<': path.uplev
-      of ':': path.reads
-      # of 'S': path.dealc
-      of '[': path.split
-      # of '*': path.polar
-      of '$': path.doalc
-      # of ';': path.input
+      of '!': EXEC.swaps
+      of '/': EXEC.later
+      of ']', ')': EXEC.merge
+      # of '%': EXEC.sifts
+      # of '#': EXEC.execs
+      # of '>': EXEC.delev
+      # of '=': EXEC.equal
+      of '(': EXEC.halve
+      # of '<': EXEC.uplev
+      of ':': EXEC.reads
+      # of 'S': EXEC.dealc
+      of '[': EXEC.split
+      # of '*': EXEC.polar
+      of '$': EXEC.doalc
+      # of ';': EXEC.input
       else: discard
-    # echo c, " to ", path.reader.addr
-
-  # path.swaps
-  # path.reads
-  # echo "\n", path.reader.addr
-
-  # path.doalc
-  # path.reads
-  # echo "\n", path.reader.addr
-
-  # path.doalc
-  # path.reads
-  # echo "\n", path.reader.addr
-
-  # path.doalc
-  # path.reads
-  # echo "\n", path.reader.addr
-
-  # path.doalc
-  # path.reads
-  # echo "\n", path.reader.addr
-
-  # path.doalc
-  # path.reads
-  # echo "\n", path.reader.addr
+    # echo c, " to ", EXEC.reader.addr
