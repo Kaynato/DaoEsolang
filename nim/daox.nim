@@ -35,23 +35,38 @@ when DEBUG:
   import strformat
   from strutils import toHex, toBin
 
+  # proc `$`(node: DaoNode): string =
+  #   if node == nil:
+  #     Unreachable("DEBUG: Tried to print nil node")
+  #   result.add($(node.kind))
+  #   let treePos = (if node.parent != nil: "CHLD" else: "ROOT")
+  #   result.add(fmt"({treePos}: pow: {node.pow}")
+  #   case node.kind:
+  #     of DnkMIX:
+  #       result.add(fmt", lc: {node.lc}, rc: {node.rc}")
+  #     of Dnk8:
+  #       if node.pow == 3:   result.add(fmt", val: x{node.val.toHex}")
+  #       elif node.pow == 2: result.add(fmt", val: x{node.val.toHex[1]}")
+  #       elif node.pow == 1: result.add(fmt", val: b{node.val.BiggestInt.toBin(2)}")
+  #       elif node.pow == 0: result.add(fmt", val: b" & ("01"[node.val]))
+  #       else: Unreachable("Impossible Dnk8 pow")
+  #     of DnkNEG, DnkPOS: discard
+  #   result.add(")")
+
   proc `$`(node: DaoNode): string =
     if node == nil:
       Unreachable("DEBUG: Tried to print nil node")
-    result.add($(node.kind))
-    let treePos = (if node.parent != nil: "CHLD" else: "ROOT")
-    result.add(fmt"({treePos}: pow: {node.pow}")
     case node.kind:
       of DnkMIX:
-        result.add(fmt", lc: {node.lc}, rc: {node.rc}")
+        result.add(fmt"({node.lc} {node.rc})")
       of Dnk8:
-        if node.pow == 3:   result.add(fmt", val: x{node.val.toHex}")
-        elif node.pow == 2: result.add(fmt", val: x{node.val.toHex[1]}")
-        elif node.pow == 1: result.add(fmt", val: b{node.val.BiggestInt.toBin(2)}")
-        elif node.pow == 0: result.add(fmt", val: b" & ("01"[node.val]))
+        if node.pow == 3:   result.add(fmt"(x{node.val.toHex})")
+        elif node.pow == 2: result.add(fmt"(x{node.val.toHex[1]})")
+        elif node.pow == 1: result.add(fmt"(b{node.val.BiggestInt.toBin(2)})")
+        elif node.pow == 0: result.add(fmt"(b" & ("01"[node.val]) & ")")
         else: Unreachable("Impossible Dnk8 pow")
-      of DnkNEG, DnkPOS: discard
-    result.add(")")
+      of DnkNEG: result.add(fmt"({node.pow} 0)")
+      of DnkPOS: result.add(fmt"({node.pow} 1)")
 
   proc `$`(reader: ptr Reader): string =
     case reader.mode:
@@ -82,14 +97,14 @@ proc swaps(EXEC: var Executor) =
 proc later(EXEC: var Executor) =
   if EXEC.oplevel < 4'u8:
     ## Ordinary LATER
-    laterReader(EXEC.data)
+    discard laterReader(EXEC.data)
   else:
     Todo("Linear Traversal")
 
 proc merge(EXEC: var Executor) =
   if EXEC.oplevel > 6'u8: return
   ## Ascend EXEC.data
-  mergeReader(EXEC.data)
+  discard mergeReader(EXEC.data)
 
 # proc sifts() # TODO
 
@@ -126,7 +141,7 @@ proc execs(EXEC: var Executor, STACK: var seq[Executor]) =
   case reader.mode:
   of RmPOS:
     while reader.pow < 3:
-      mergeReader(reader)
+      discard mergeReader(reader)
     if reader.pow == reader.node.pow:
       reader.mode = RmNODE
   of RmNODE:
@@ -216,7 +231,7 @@ proc initTLP(hexData: seq[uint8]): Executor =
 
   var nodes = initDeque[DaoNode]()
 
-  for i in countup(0, ((hexData.len + 1) div 2) - 1, 2):
+  for i in countup(0, hexData.len - 2, 2):
     let val = (hexData[i] shl 4) or hexData[i+1]
     nodes.addLast(DaoNode(kind: Dnk8, pow: 3, val: val, parent: nil))
 
@@ -228,21 +243,31 @@ proc initTLP(hexData: seq[uint8]): Executor =
 
   # Treeify.
   while nodes.len > 1:
-    var lc = nodes.popFirst()
-    let rc = nodes.popFirst()
-    while lc.pow < rc.pow:
+    let lc = nodes.popFirst()
+    let rcPeek = nodes.peekFirst()
+    
+    if lc.pow < rcPeek.pow:
       # Need zero padding on right
-      if (lc.kind == DnkNEG or (lc.kind == Dnk8 and lc.val == 0'u8)):
+      if lc.kind == DnkNEG:
         # If left is blank, just escalate
         inc lc.pow
+        nodes.addLast lc
+      elif (lc.kind == Dnk8 and lc.val == 0'u8):
+        # Blank dnk8
+        nodes.addLast DaoNode(kind: DnkNEG, pow: lc.pow + 1)
       else:
         # Otherwise, replace as lc of new mix parent with empty rc
-        lc = DaoNode(kind: DnkMIX, pow: lc.pow + 1, lc: lc)
-        lc.rc = DaoNode(kind: DnkNEG, pow: lc.pow - 1)
-    if lc.pow > rc.pow:
-      Unreachable("initTLP: ILLEGAL - First child had greater pow than second.")
-    else:
-      # Equal power
+        let parent = DaoNode(kind: DnkMIX, pow: lc.pow + 1, lc: lc)
+        if parent.pow > 3:
+          parent.rc = DaoNode(kind: DnkNEG, pow: lc.pow)
+        elif parent.pow == 3:
+          parent.rc = DaoNode(kind: Dnk8, pow: 3, val: 0'u8)
+        else:
+          Unreachable("initTLP: ILLEGAL - Tried to create node with pow under 2")
+        nodes.addLast parent
+    elif lc.pow == rcPeek.pow:
+      let rc = nodes.popFirst()
+      # Equal power. Check for pure nodes first
       if (lc.kind == DnkNEG or (lc.kind == Dnk8 and lc.val == 0'u8)) and
          (rc.kind == DnkNEG or (rc.kind == Dnk8 and rc.val == 0'u8)):
         nodes.addLast DaoNode(kind: DnkNEG, pow: lc.pow + 1)
@@ -254,6 +279,8 @@ proc initTLP(hexData: seq[uint8]): Executor =
         lc.parent = parent
         rc.parent = parent
         nodes.addLast parent
+    else:
+      Unreachable("initTLP: ILLEGAL - First child had greater pow than second.")
 
   # Now we have made the tree for the TLP.
   var tlp = initPath(dataRoot = nodes.popFirst())
@@ -264,36 +291,14 @@ proc initTLP(hexData: seq[uint8]): Executor =
   # Special case executor construction
   result.oplevel = 0
   result.execStart = Reader(path: tlp, mode: RmNODE, node: execStart, pow: 3, idx: 0)
-  result.exec = Reader(path: tlp, mode: RmNODE, node: execStart, pow: 3, idx: 0)
+  result.exec = Reader(path: tlp, mode: RmPOS, node: execStart, pow: 2, idx: 0)
   result.data = Reader(path: child, mode: RmPOS, node: child.dataRoot, pow: 0, idx: 0)
 
-when isMainModule:
-
-  const prg = "$$$(([]!)/([])):((/[])/([]!/[]!)):(/[])::[/([]!/[])]!:[[[]]!]:[([]!)/[/[]!]!]:[/([]!/[])]!:[([]!)/(/[])]:((/[])/[]):(/([]!)):([[]]!/[[]!]!):[[[]/[]]]!:"
-  var hexData: seq[uint8]
-  for c in prg:
-    hexData.add c.symToVal
-
-  # Initialize program stack and base executor
+proc interpret(prg: string, EXEC: var Executor) =
+  ## Directly interpret daoyu symbols
+  # Unstable
+  # TODO make this NOT reliant on EXEC being passed in please
   var STACK: seq[Executor]
-  var EXEC = hexData.initTLP
-
-  doalc(EXEC)
-  doalc(EXEC)
-  doalc(EXEC)
-  
-  echo "Exec0: ", EXEC.exec
-
-  execs(EXEC, STACK)
-
-  echo "Exec0: ", EXEC.exec
-  echo "Exec1: ", STACK[0].exec
-
-
-  # Then call path.execs...
-
-  # var path = initPath()
-
   for c in prg:
     # echo c, " on ", EXEC.reader.addr
     case c:
@@ -315,3 +320,135 @@ when isMainModule:
       # of ';': EXEC.input
       else: discard
     # echo c, " to ", EXEC.reader.addr
+
+const SIGKILL = 0xFF
+
+proc moveThenGet(reader: var Reader, debug: static bool = false): uint8 =
+  # Move to next linear position and return the value there.
+  if reader.pow != 2:
+    Unreachable("moveThenGet: Exec reader has non-2 pow")
+  if reader.mode == RmNODE:
+    Unreachable("moveThenGet: Exec reader was pow 2 but was reading Nodes")
+  # We are certainly inside of DnkPOS or DnkNEG.
+  let pdiff = reader.node.pow - reader.pow
+  if pdiff >= 64:
+    Todo("moveThenGet: Index might overflow uint64")
+  # If we can move right, just move and get the value.
+  if (((reader.idx + 1) shr pdiff) and 1'u64) == 0:
+    # Move right and get value
+    inc reader.idx
+    return reader.getHex()
+  # Otherwise, we have to actually merge out of the node itself
+  reader.mode = RmNODE
+  reader.pow = reader.node.pow
+  reader.idx = 0
+  # Coming out here means we need to come out of the node :(
+  # No parent or was right child
+  if reader.node.parent == nil:
+    when debug: echo "At root, no cmd"
+    return SIGKILL
+  # Was right child - go up until is left child or hits root node
+  while reader.node != reader.node.parent.lc:
+    discard mergeReader(reader, allow_ascent=false)
+    if reader.node.parent == nil:
+      when debug: echo "Ascend to root, no cmd"
+      return SIGKILL
+    else:
+      when debug: echo "Merged to find rc"
+  # Now we are the left child, so move right
+  if not laterReader(reader, allow_merge=false):
+    Unreachable("moveThenGet: Tried to merge despite being left child.")
+  # Move down until pow is 3
+  while reader.pow > 2:
+    halveReader(reader)
+  # Now we're good
+  return reader.getHex()
+
+const OP_NAMES = [
+  "IDLES", "SWAPS", "LATER", "MERGE",
+  "SIFTS", "EXECS", "DELEV", "EQUAL",
+  "HALVE", "UPLEV", "READS", "DEALC",
+  "SPLIT", "POLAR", "DOALC", "INPUT"
+]
+
+const OP_SYM = ".!/)%#>=(<:S[*$;"
+
+proc run(EXEC: var Executor, debug: static bool = false) =
+  ## Run until termination
+  var STACK: seq[Executor]
+  var next_cmd: uint8 = EXEC.exec.getHex()
+  while true:
+    while next_cmd != 0xFF:
+      when debug: echo fmt"Next_cmd was {OP_SYM[next_cmd]}"
+
+      # I guess we can maintain a map : node -> exec readers
+      # That way we can properly move them if the node changes
+      # Or nil their node if DEALC'd so the gc works and you don't execute on empty code
+      # Hahaha wait that means that we have to go and destroy data readers too oh no
+      case next_cmd:
+        of 0x0: discard
+        of 0x1: swaps(EXEC) # TODO might change readers
+        of 0x2: later(EXEC)
+        of 0x3: merge(EXEC)
+        # of 0x4: sifts(EXEC) # TODO might change readers
+        of 0x5: execs(EXEC, STACK)
+        of 0x6: delev(EXEC)
+        # of 0x7: equal(EXEC)
+        of 0x8: halve(EXEC)
+        # of 0x9: uplev(EXEC)
+        of 0xA: reads(EXEC)
+        # of 0xB: dealc(EXEC) # TODO might change readers
+        of 0xC: split(EXEC) # TODO might change readers
+        # of 0xD: polar(EXEC)
+        of 0xE: doalc(EXEC) # TODO might change readers
+        # of 0xF: input(EXEC) # TODO might change readers
+        else: discard
+      next_cmd = EXEC.exec.moveThenGet(debug=debug)
+    when debug: echo &"Exited with next_cmd {next_cmd}"
+    # WARN
+    # Coming out here means that the EXEC has terminated.
+    # We should be careful about ... memory leaks.
+    if STACK.len == 0:
+      when debug: echo "Stack length zero, pop"
+      return
+    EXEC = STACK.pop()
+
+# TODO   :)
+# We can make the highest EXEC take in input from the stdin or something.
+# proc repl()
+
+# TODO list
+# node -> reader map and refpassing contained within the run/interpret context
+# swaps fix
+# split fix
+# doalc fix
+# dealc
+# helloworld2 example confirmed
+# input
+# uplev
+# cat confirmed
+# polar
+# equal
+# truth machine confirmed
+# Clean and read files
+# Bin/Hex viewing of path (complete with shorthand for pure nodes larger than a group of 8)
+# sifts
+
+when isMainModule:
+
+  const prg = "$$$(([]!)/([])):((/[])/([]!/[]!)):(/[])::[/([]!/[])]!:[[[]]!]:[([]!)/[/[]!]!]:[/([]!/[])]!:[([]!)/(/[])]:((/[])/[]):(/([]!)):([[]]!/[[]!]!):[[[]/[]]]!:"
+  var hexData: seq[uint8]
+  for c in prg:
+    hexData.add c.symToVal
+
+  # Initialize program stack and base executor
+  var STACK: seq[Executor]
+  var EXEC = hexData.initTLP
+
+  # echo EXEC.exec.path.dataRoot
+
+  # execs(EXEC, STACK)
+
+  # prg.interpret(EXEC)
+
+  run(EXEC)

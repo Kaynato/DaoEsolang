@@ -36,6 +36,38 @@ const lookup2 = [
 template toBin2(c: uint8): string = lookup2[c]
 template toBin4(c: uint8): string = lookup4[c]
 
+# Forward declare
+proc halveReader*(reader: var Reader) {.inline.}
+
+proc descendPath*(reader: var Reader) {.inline.} =
+  ## Select full child path
+  let child = reader.path.child
+  if child != nil:
+    reader.node = child.dataRoot
+    reader.path = child
+    reader.mode = RmNODE
+    reader.pow = reader.node.pow
+    reader.idx = 0
+
+proc ascendPath*(reader: var Reader) {.inline.} =
+  let owner = reader.path.owner
+  if owner != nil:
+    reader.node = owner.dataRoot
+    reader.path = owner
+    reader.mode = RmNODE
+    reader.pow = reader.node.pow
+    reader.idx = 0
+    while reader.pow > 1:
+      halveReader(reader)
+
+proc getHex*(reader: Reader): uint8 {.inline.} =
+  if reader.pow != 2: Unreachable("getHex: Reader pow not 2")
+  let node = reader.node
+  case node.kind:
+    of DnkPOS: return 0xF'u8
+    of DnkNEG: return 0x0'u8
+    of Dnk8: return (if reader.idx == 0: node.val shr 4 else: node.val and 0xF'u8)
+    of DnkMIX: Unreachable("getHex: DnkMIX cannot be pow2")
 
 proc swapsReader*(reader: var Reader) {.inline.} =
   let node = reader.node
@@ -69,13 +101,8 @@ proc halveReader*(reader: var Reader) {.inline.} =
         reader.node = node.lc
         dec reader.pow
       of Dnk8, DnkPOS, DnkNEG:
-        let child = reader.path.child
-        if node.pow == 0 and child != nil:
-          ## Descend into bit -> Select child path
-          reader.node = child.dataRoot
-          reader.path = child
-          reader.mode = RmNODE
-          reader.pow = reader.node.pow
+        if node.pow == 0:
+          descendPath(reader)
         else:
           ## Enter the node
           reader.pow = node.pow - 1
@@ -83,55 +110,66 @@ proc halveReader*(reader: var Reader) {.inline.} =
           reader.mode = RmPOS
   of RmPOS:
     if reader.pow == 0:
-      ## Descend into bit -> Select child path
-      let child = reader.path.child
-      if child != nil:
-        reader.node = child.dataRoot
-        reader.path = child
-        reader.mode = RmNODE
+      descendPath(reader)
     else:
       dec reader.pow
       reader.idx = reader.idx shl 1
 
-proc mergeReader*(reader: var Reader) {.inline.} =
+proc mergeReader*(reader: var Reader, allow_ascent: static bool = true): bool {.inline.} =
+  ## Move the reader to parent if possible.
+  ## If no parent and allow_ascent, try to move to the parent path's first bit.
+  ## Return true if merge succeeded without ascent.
   case reader.mode:
     of RmNODE:
       if reader.node.parent != nil:
         reader.node = reader.node.parent
         reader.pow = reader.node.pow
+        return true
       else:
-        Todo("Select first bit of upper program.")
+        when allow_ascent:
+          ascendPath(reader)
+          return false
+        else:
+          return false
     of RmPOS:
       if reader.pow == reader.node.pow:
-        # Only should happen when inside a Dnk8 of pow < 3.
-        if reader.node.parent == nil and reader.path.owner != nil:
-          # Try to go to the first BIT of the upper program.
-          Todo("Select first bit of upper program.")
-        else:
-          Unreachable("MERGE: RmPOS Pow match but parent is not nil.")
+        # Only should happen when inside a Dnk8 of pow < 3. Means we're at root.
+        when allow_ascent:
+          if reader.node.parent == nil and reader.path.owner != nil:
+            # Try to go to the first BIT of the upper program.
+             ascendPath(reader)
+          else:
+            Unreachable("MERGE: RmPOS Pow match but parent is not nil.")
+        return false
       else:
         reader.pow += 1
         reader.idx = reader.idx div 2
         if reader.pow > 2 and reader.pow == reader.node.pow:
           reader.mode = RmNODE
+        return true
 
-proc laterReader*(reader: var Reader) {.inline.} =
+proc laterReader*(reader: var Reader, allow_merge: static bool = true): bool {.inline.} =
+  ## If lc, move to rc. If rc, go to parent. Returns whether we moved or not (e.g. if was at top)
   case reader.mode:
     of RmNODE:
       if reader.node.parent == nil or reader.node == reader.node.parent.rc:
         # If root node or right node, defer to merge
-        mergeReader(reader)
+        when allow_merge:
+          discard mergeReader(reader)
+        return false
       else:
         if reader.node == reader.node.parent.lc:
           reader.node = reader.node.parent.rc
           reader.pow = reader.node.pow
+          return true
         else:
           Unreachable("LATER: Unchained node.")
     of RmPOS:
       # If on the second virtual half of some node, merge
-      if (reader.idx and 1'u8) != 0: mergeReader(reader)
+      if (reader.idx and 1'u8) != 0: discard mergeReader(reader)
       # Otherwise, go to the right half
       else: inc reader.idx
+      return true
 
 proc readsReader*(reader: var Reader) {.inline.} =
   let node = reader.node
@@ -234,4 +272,4 @@ proc doalcReader*(reader: var Reader) {.inline.} =
       parent.rc.parent = parent
     root.parent = parent
     reader.path.dataRoot = parent
-  mergeReader(reader)
+  discard mergeReader(reader)
