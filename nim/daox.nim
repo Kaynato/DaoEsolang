@@ -53,6 +53,12 @@ when DEBUG:
   #     of DnkNEG, DnkPOS: discard
   #   result.add(")")
 
+  proc `$`(path: Path): string =
+    result.add fmt"[{path.depth: 3}"
+    result.add if path.owner != nil: '^' else: ' '
+    result.add if path.child != nil: 'v' else: ' '
+    result.add ']'
+
   proc `$`(node: DaoNode): string =
     if node == nil:
       Unreachable("DEBUG: Tried to print nil node")
@@ -73,7 +79,37 @@ when DEBUG:
       of RmNODE: fmt"Read[{$reader.node}]"
       of RmPOS: fmt"Read(p{reader.pow}, i{reader.idx})[{$reader.node}]"
 
+  proc `==`(a, b: Reader): bool =
+    (a.path == b.path) and (a.pow == b.pow) and (a.idx == b.idx) and (a.node == b.node) and (a.mode == b.mode)
+
 ## Utility
+proc store*(e: Executor): StoredExecutor =
+  result.oplevel = e.oplevel
+  result.data = e.data.store
+  result.exec = e.exec.store
+  result.execStart = e.execStart.store
+
+proc retrieve*(se: StoredExecutor): Executor =
+  result.oplevel = se.oplevel
+  result.data = se.data.retrieve
+  result.exec = se.exec.retrieve
+  result.execStart = se.execStart.retrieve
+  result.wasMoved = false
+
+template withSafeModify(e: var Executor, body: untyped): untyped =
+  var sreader: StoredReaderRef = nil
+
+  if e.data.path == e.exec.path:
+    sreader.new
+    sreader[] = e.exec.store
+    # echo "Storing: ", e.exec
+
+  body
+
+  if sreader != nil:
+    e.exec = sreader[].retrieve
+    # echo "From stored: ", sreader[]
+    # echo "Got out: ", e.exec
 
 proc initPath(parent: Path = nil, dataRoot: DaoNode = nil): Path =
   ## Initialize a new path from a parent, or if parentless, the TLP.
@@ -99,7 +135,8 @@ proc later(EXEC: var Executor) =
     ## Ordinary LATER
     discard laterReader(EXEC.data)
   else:
-    Todo("Linear Traversal")
+    # TODO potentially undefined behavior when lines at end
+    discard linesReader(EXEC.data)
 
 proc merge(EXEC: var Executor) =
   if EXEC.oplevel > 6'u8: return
@@ -129,32 +166,32 @@ proc merge(EXEC: var Executor) =
 
 ]#
 
-proc execs(EXEC: var Executor, STACK: var seq[Executor]) =
+proc execs(EXEC: var Executor, STACK: var seq[StoredExecutor]) =
   if EXEC.oplevel > 7'u8: return
 
   # Exit if the exec reader would be crushed
-  if EXEC.data.path.dataRoot.pow < 3: return
+  if EXEC.data.path.dataRoot.pow < 2: return
 
   # Copy the reader and navigate to the leftmost pow3 position in selection
   var reader = EXEC.data
 
   case reader.mode:
   of RmPOS:
-    while reader.pow < 3:
+    while reader.pow < 2:
       discard mergeReader(reader)
     if reader.pow == reader.node.pow:
       reader.mode = RmNODE
   of RmNODE:
-    if reader.node.pow > 3:
-      while reader.node.pow > 3:
+    if reader.node.pow > 2:
+      while reader.node.pow > 2:
         halveReader(reader)
-    elif reader.pow == 3:
+    elif reader.pow == 2:
       discard
     else:
-      Unreachable("EXECS: Reader pow was < 3 despite being RmNODE")
+      Unreachable("EXECS: Reader pow was < 2 despite being RmNODE")
 
   # Store the old reader
-  STACK.add(EXEC)
+  STACK.add(EXEC.store)
 
   # If child of target path is nil, create a new child
   let child = if EXEC.data.path.child == nil:
@@ -180,19 +217,30 @@ proc halve(EXEC: var Executor) =
   if EXEC.oplevel > 6'u8: return
   halveReader(EXEC.data)
 
-# proc uplev() # TODO
+proc uplev(EXEC: var Executor) =
+  if EXEC.oplevel > 8'u8: return
+  EXEC.oplevel += 1
+  # This copies, right? Right. Pretty sure.
+  EXEC.exec = EXEC.execStart
+  EXEC.wasMoved = true
 
 proc reads(EXEC: var Executor) =
   if EXEC.oplevel > 5'u8: return
   readsReader(EXEC.data)
 
-# proc dealc() # TODO
+proc dealc(EXEC: var Executor) =
+  if EXEC.oplevel > 2'u8: return
+  
+  withSafeModify(EXEC):
+    dealcReader(EXEC.data)
+
+  halveReader(EXEC.data)
 
 proc split(EXEC: var Executor) =
   if EXEC.oplevel > 6'u8: return
   if EXEC.oplevel == 0'u8:
     splitReader(EXEC.data)
-  halve(EXEC)
+  halveReader(EXEC.data)
 
 # proc polar() # TODO
 
@@ -290,7 +338,7 @@ proc initTLP(hexData: seq[uint8]): Executor =
 
   # Special case executor construction
   result.oplevel = 0
-  result.execStart = Reader(path: tlp, mode: RmNODE, node: execStart, pow: 3, idx: 0)
+  result.execStart = Reader(path: tlp, mode: RmPOS, node: execStart, pow: 2, idx: 0)
   result.exec = Reader(path: tlp, mode: RmPOS, node: execStart, pow: 2, idx: 0)
   result.data = Reader(path: child, mode: RmPOS, node: child.dataRoot, pow: 0, idx: 0)
 
@@ -298,7 +346,7 @@ proc interpret(prg: string, EXEC: var Executor) =
   ## Directly interpret daoyu symbols
   # Unstable
   # TODO make this NOT reliant on EXEC being passed in please
-  var STACK: seq[Executor]
+  var STACK: seq[StoredExecutor]
   for c in prg:
     # echo c, " on ", EXEC.reader.addr
     case c:
@@ -321,49 +369,6 @@ proc interpret(prg: string, EXEC: var Executor) =
       else: discard
     # echo c, " to ", EXEC.reader.addr
 
-const SIGKILL = 0xFF
-
-proc moveThenGet(reader: var Reader, debug: static bool = false): uint8 =
-  # Move to next linear position and return the value there.
-  if reader.pow != 2:
-    Unreachable("moveThenGet: Exec reader has non-2 pow")
-  if reader.mode == RmNODE:
-    Unreachable("moveThenGet: Exec reader was pow 2 but was reading Nodes")
-  # We are certainly inside of DnkPOS or DnkNEG.
-  let pdiff = reader.node.pow - reader.pow
-  if pdiff >= 64:
-    Todo("moveThenGet: Index might overflow uint64")
-  # If we can move right, just move and get the value.
-  if (((reader.idx + 1) shr pdiff) and 1'u64) == 0:
-    # Move right and get value
-    inc reader.idx
-    return reader.getHex()
-  # Otherwise, we have to actually merge out of the node itself
-  reader.mode = RmNODE
-  reader.pow = reader.node.pow
-  reader.idx = 0
-  # Coming out here means we need to come out of the node :(
-  # No parent or was right child
-  if reader.node.parent == nil:
-    when debug: echo "At root, no cmd"
-    return SIGKILL
-  # Was right child - go up until is left child or hits root node
-  while reader.node != reader.node.parent.lc:
-    discard mergeReader(reader, allow_ascent=false)
-    if reader.node.parent == nil:
-      when debug: echo "Ascend to root, no cmd"
-      return SIGKILL
-    else:
-      when debug: echo "Merged to find rc"
-  # Now we are the left child, so move right
-  if not laterReader(reader, allow_merge=false):
-    Unreachable("moveThenGet: Tried to merge despite being left child.")
-  # Move down until pow is 3
-  while reader.pow > 2:
-    halveReader(reader)
-  # Now we're good
-  return reader.getHex()
-
 const OP_NAMES = [
   "IDLES", "SWAPS", "LATER", "MERGE",
   "SIFTS", "EXECS", "DELEV", "EQUAL",
@@ -375,16 +380,24 @@ const OP_SYM = ".!/)%#>=(<:S[*$;"
 
 proc run(EXEC: var Executor, debug: static bool = false) =
   ## Run until termination
-  var STACK: seq[Executor]
+  var STACK: seq[StoredExecutor]
   var next_cmd: uint8 = EXEC.exec.getHex()
   while true:
-    while next_cmd != 0xFF:
-      when debug: echo fmt"Next_cmd was {OP_SYM[next_cmd]}"
 
-      # I guess we can maintain a map : node -> exec readers
-      # That way we can properly move them if the node changes
-      # Or nil their node if DEALC'd so the gc works and you don't execute on empty code
-      # Hahaha wait that means that we have to go and destroy data readers too oh no
+    while next_cmd != 0xFF:
+      when debug:
+        var stored = EXEC.data.store
+        if EXEC.data != stored.retrieve:
+          echo "WARN: Store and retrieve CHANGED for readers!"
+          echo "Original:"
+          echo '\t', EXEC.data
+          echo "Stored:"
+          echo '\t', stored
+          echo "Retrieved:"
+          echo '\t', stored.retrieve
+          # assert false
+        echo fmt"Next_cmd was {OP_SYM[next_cmd]} : data : {EXEC.data} "
+
       case next_cmd:
         of 0x0: discard
         of 0x1: swaps(EXEC) # TODO might change readers
@@ -395,15 +408,28 @@ proc run(EXEC: var Executor, debug: static bool = false) =
         of 0x6: delev(EXEC)
         # of 0x7: equal(EXEC)
         of 0x8: halve(EXEC)
-        # of 0x9: uplev(EXEC)
+        of 0x9: uplev(EXEC)
         of 0xA: reads(EXEC)
-        # of 0xB: dealc(EXEC) # TODO might change readers
+        of 0xB: dealc(EXEC)
         of 0xC: split(EXEC) # TODO might change readers
         # of 0xD: polar(EXEC)
         of 0xE: doalc(EXEC) # TODO might change readers
         # of 0xF: input(EXEC) # TODO might change readers
         else: discard
-      next_cmd = EXEC.exec.moveThenGet(debug=debug)
+
+      if EXEC.exec.pow != 2:
+        Unreachable("moveThenGet: Exec reader has non-2 pow")
+      if EXEC.exec.mode == RmNODE:
+        Unreachable("moveThenGet: Exec reader was pow 2 but was reading Nodes")
+
+      if EXEC.wasMoved:
+        next_cmd = EXEC.exec.getHex()
+        EXEC.wasMoved = false
+      elif linesReader(EXEC.exec):
+        next_cmd = EXEC.exec.getHex()
+      else:
+        next_cmd = 0xFF
+
     when debug: echo &"Exited with next_cmd {next_cmd}"
     # WARN
     # Coming out here means that the EXEC has terminated.
@@ -411,7 +437,7 @@ proc run(EXEC: var Executor, debug: static bool = false) =
     if STACK.len == 0:
       when debug: echo "Stack length zero, pop"
       return
-    EXEC = STACK.pop()
+    EXEC = STACK.pop.retrieve
 
 # TODO   :)
 # We can make the highest EXEC take in input from the stdin or something.
@@ -423,7 +449,6 @@ proc run(EXEC: var Executor, debug: static bool = false) =
 # split fix
 # doalc fix
 # dealc
-# helloworld2 example confirmed
 # input
 # uplev
 # cat confirmed
@@ -436,19 +461,27 @@ proc run(EXEC: var Executor, debug: static bool = false) =
 
 when isMainModule:
 
-  const prg = "$$$(([]!)/([])):((/[])/([]!/[]!)):(/[])::[/([]!/[])]!:[[[]]!]:[([]!)/[/[]!]!]:[/([]!/[])]!:[([]!)/(/[])]:((/[])/[]):(/([]!)):([[]]!/[[]!]!):[[[]/[]]]!:"
+  # const prg = "$$$(/(/("
+  # const prg = "$$$(([]!)/([])):((/[])/([]!/[]!)):(/[])::[/([]!/[])]!:[[[]]!]:[([]!)/[/[]!]!]:[/([]!/[])]!:[([]!)/(/[])]:((/[])/[]):(/([]!)):([[]]!/[[]!]!):[[[]/[]]]!:"
+  
+  # Helloworld 2
+  const prg = "))))))))/:((((((S...............%(>#>[>[>;/.==>;=/>[>%/!.:......"
+
+
+  # Uplev test
+  # const prg = "$..<"
+
   var hexData: seq[uint8]
   for c in prg:
     hexData.add c.symToVal
 
   # Initialize program stack and base executor
-  var STACK: seq[Executor]
   var EXEC = hexData.initTLP
-
-  # echo EXEC.exec.path.dataRoot
+  
+  echo EXEC.exec.path.dataRoot
 
   # execs(EXEC, STACK)
 
   # prg.interpret(EXEC)
 
-  run(EXEC)
+  EXEC.run(debug=true)

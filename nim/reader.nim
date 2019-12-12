@@ -38,6 +38,113 @@ template toBin4(c: uint8): string = lookup4[c]
 
 # Forward declare
 proc halveReader*(reader: var Reader) {.inline.}
+proc hlvrtReader*(reader: var Reader) {.inline.}
+
+proc store*(reader: Reader): StoredReader =
+  result.path = reader.path
+  result.rootPow = reader.path.dataRoot.pow
+  result.pow = reader.pow
+
+  if result.rootPow == result.pow:
+    return result
+
+  var pow = reader.pow
+  var idx = reader.idx
+  var nMoves: int
+  var move: uint64
+  # Go up until we stop being in POS mode or meet the root
+  while pow < reader.node.pow and pow < result.rootPow:
+    # Push lc/rc to the move and ascend
+    move = (move shl 1) or (idx and 1)
+    idx = idx div 2
+    inc pow
+    inc nMoves
+    inc result.nBitsInFirstMove
+    if nMoves >= 64:
+      nMoves -= 64
+      result.moves.add(move)
+      move = 0'u64
+      result.nBitsInFirstMove = 0'u64
+
+  # Go up until we meet the pow
+  var node = reader.node
+  # echo pow, " ", result.rootPow
+  while pow < result.rootPow:
+    if node == node.parent.lc:
+      move = (move shl 1)
+    elif node == node.parent.rc:
+      move = (move shl 1) or 1'u64
+    else:
+      Unreachable("STORE: Hanging node")
+    node = node.parent
+    inc pow
+    inc nMoves
+    inc result.nBitsInFirstMove
+    if nMoves >= 64:
+      nMoves -= 64
+      result.moves.add(move)
+      move = 0'u64
+      result.nBitsInFirstMove = 0'u64
+
+  # Add moves if remaining
+  if nMoves > 0:
+    result.moves.add(move)
+    # echo "put ", move, " in moves -> ", result.moves
+    result.nBitsInFirstMove = nMoves.uint64
+
+proc retrieve*(stored: StoredReader): Reader =
+  result.path = stored.path
+  if result.path == nil or result.path.dataRoot == nil: return result
+
+  # Drop down to the root
+  result.node = result.path.dataRoot
+  result.pow = result.node.pow
+  result.idx = 0
+  result.mode = if result.pow >= 3: RmNODE else: RmPOS
+
+  # No moves? Ok, then.
+  if stored.moves.len == 0:
+    return result
+
+  var moves = stored.moves
+  var nBitsInFirstMove = stored.nBitsInFirstMove
+  var move = moves.pop()
+  # If path became smaller while we were gone, we need to ignore some moves
+  if result.node.pow < stored.rootPow:
+    # This is how many moves we should ignore.
+    var powdiff = stored.rootPow - result.node.pow
+    if powdiff >= nBitsInFirstMove:
+      # Completely ignore the first move possibly with room to spare
+      powdiff -= nBitsInFirstMove
+      nBitsInFirstMove = 64
+      move = moves.pop()
+    while powdiff >= 64:
+      powdiff -= 64
+      move = moves.pop()
+    # Powdiff is now in the range 0..63
+    move = move shr powdiff
+    nBitsInFirstMove -= powdiff
+  # What if the path became bigger while we were gone?
+  while result.node.pow > stored.rootPow:
+    # Honestly, that's fine. We just need to drop down to the stored pow.
+    halveReader(result)
+  # Now the reader is at the rootPow, or the correct amount of moves has been ignored.
+  # Either way, we are now ready to consume the moves.
+  while nBitsInFirstMove > 0:
+    if (move and 1'u64) == 0:
+      halveReader(result)
+    else:
+      hlvrtReader(result)
+    move = move shr 1
+    dec nBitsInFirstMove
+  while moves.len > 0:
+    move = moves.pop()
+    for _ in 0..63:
+      if (move and 1'u64) == 0:
+        halveReader(result)
+      else:
+        hlvrtReader(result)
+      move = move shr 1
 
 proc descendPath*(reader: var Reader) {.inline.} =
   ## Select full child path
@@ -45,7 +152,7 @@ proc descendPath*(reader: var Reader) {.inline.} =
   if child != nil:
     reader.node = child.dataRoot
     reader.path = child
-    reader.mode = RmNODE
+    reader.mode = if reader.node.pow >= 3: RmNODE else: RmPOS
     reader.pow = reader.node.pow
     reader.idx = 0
 
@@ -54,10 +161,10 @@ proc ascendPath*(reader: var Reader) {.inline.} =
   if owner != nil:
     reader.node = owner.dataRoot
     reader.path = owner
-    reader.mode = RmNODE
+    reader.mode = if reader.node.pow >= 3: RmNODE else: RmPOS
     reader.pow = reader.node.pow
     reader.idx = 0
-    while reader.pow > 1:
+    while reader.pow > 0:
       halveReader(reader)
 
 proc getHex*(reader: Reader): uint8 {.inline.} =
@@ -68,6 +175,15 @@ proc getHex*(reader: Reader): uint8 {.inline.} =
     of DnkNEG: return 0x0'u8
     of Dnk8: return (if reader.idx == 0: node.val shr 4 else: node.val and 0xF'u8)
     of DnkMIX: Unreachable("getHex: DnkMIX cannot be pow2")
+
+proc getByte*(reader: Reader): uint8 {.inline.} =
+  if reader.pow != 3: Unreachable("getByte: Reader pow not 3 but was " & $(reader.pow))
+  let node = reader.node
+  case node.kind:
+    of DnkPOS: return 0xFF'u8
+    of DnkNEG: return 0x00'u8
+    of Dnk8: return node.val
+    of DnkMIX: Unreachable("getHex: DnkMIX cannot be pow3")
 
 proc swapsReader*(reader: var Reader) {.inline.} =
   let node = reader.node
@@ -86,13 +202,14 @@ proc swapsReader*(reader: var Reader) {.inline.} =
         let writeMask = 0b11'u8 shl bitsFromRight
         let shifted = (node.val shl 1 and 0b10101010'u8) or (node.val shr 1 and 0b01010101'u8)
         node.val = (node.val and not writeMask) or (shifted and writeMask)
-      elif node.pow == 0: # RmPOS, swap bit is discard
+      elif reader.pow == 0: # RmPOS, swap bit is discard
         discard
       else:
-        Unreachable("SWAPS: Impossible Dnk8 pow.")
+        Unreachable("SWAPS: Impossible Dnk8 pow: " & $(reader.pow))
     else: discard
 
 proc halveReader*(reader: var Reader) {.inline.} =
+  ## Go to left child
   let node = reader.node
   case reader.mode:
   of RmNODE:
@@ -114,6 +231,31 @@ proc halveReader*(reader: var Reader) {.inline.} =
     else:
       dec reader.pow
       reader.idx = reader.idx shl 1
+
+proc hlvrtReader*(reader: var Reader) {.inline.} =
+  ## Go to right child
+  let node = reader.node
+  case reader.mode:
+  of RmNODE:
+    case node.kind:
+      of DnkMIX:
+        reader.node = node.rc
+        dec reader.pow
+      of Dnk8, DnkPOS, DnkNEG:
+        if node.pow == 0:
+          descendPath(reader)
+        else:
+          ## Enter the node
+          reader.pow = node.pow - 1
+          reader.idx = 1
+          reader.mode = RmPOS
+  of RmPOS:
+    if reader.pow == 0:
+      descendPath(reader)
+    else:
+      dec reader.pow
+      reader.idx = (reader.idx shl 1) + 1'u64
+
 
 proc mergeReader*(reader: var Reader, allow_ascent: static bool = true): bool {.inline.} =
   ## Move the reader to parent if possible.
@@ -165,11 +307,53 @@ proc laterReader*(reader: var Reader, allow_merge: static bool = true): bool {.i
         else:
           Unreachable("LATER: Unchained node.")
     of RmPOS:
-      # If on the second virtual half of some node, merge
-      if (reader.idx and 1'u8) != 0: discard mergeReader(reader)
+      if ((reader.idx and 1'u8) != 0) or (reader.node.pow == 0):
+        # If on the second virtual half of some node, or root is bit, merge
+        discard mergeReader(reader)
       # Otherwise, go to the right half
       else: inc reader.idx
       return true
+
+proc linesReader*(reader: var Reader): bool {.inline.} =
+  ## Move right once and return true. If can't move right, return false.
+  # Move to next linear position and return the value there.
+  let origPow = reader.pow
+  if reader.mode == RmNODE:
+    # If we're left child, go to right child
+    if reader.node == reader.node.parent.lc:
+      reader.node = reader.node.parent.rc
+      return true
+  else:
+    # We are certainly inside of DnkPOS or DnkNEG.
+    let pdiff = reader.node.pow - reader.pow
+    if pdiff >= 64:
+      Todo("moveThenGet: Index might overflow uint64")
+    # If we can move right, just move and get the value.
+    if (((reader.idx + 1) shr pdiff) and 1'u64) == 0:
+      # Move right and get value
+      inc reader.idx
+      return true
+    # Otherwise, we have to actually merge out of the node itself
+    reader.mode = RmNODE
+    reader.pow = reader.node.pow
+    reader.idx = 0
+  # Coming out here means we need to come out of the node :(
+  # No parent or was right child
+  if reader.node.parent == nil:
+    return false
+  # Was right child - go up until is left child or hits root node
+  while reader.node != reader.node.parent.lc:
+    discard mergeReader(reader, allow_ascent=false)
+    if reader.node.parent == nil:
+      return false
+  # Now we are the left child, so move right
+  if not laterReader(reader, allow_merge=false):
+    Unreachable("moveThenGet: Tried to merge despite being left child.")
+  # Move down until pow is back to before
+  while reader.pow > origPow:
+    halveReader(reader)
+  # Now we're good
+  return true
 
 proc readsReader*(reader: var Reader) {.inline.} =
   let node = reader.node
@@ -177,7 +361,11 @@ proc readsReader*(reader: var Reader) {.inline.} =
   of RmNODE:
     case node.kind:
       of DnkMIX:
-        Todo("Need linear traversal to be implemented.")
+        # Copy reader for linear traversal and move to pow 3
+        var readHead = reader
+        while readHead.pow > 3: halveReader(readHead)
+        stdout.write readHead.getByte().char
+        while linesReader(readHead): stdout.write readHead.getByte().char
       of DnkNEG, DnkPOS:
         let val = (if node.kind == DnkPOS: 0xFF.char else: 0x00.char)
         for _ in 0 ..< (1'u64 shl (node.pow - 3)):
@@ -263,9 +451,10 @@ proc doalcReader*(reader: var Reader) {.inline.} =
         ## Special case: Just modify the Dnk8 instead.
         root.val = root.val shl (1 shl root.pow)
         root.pow.inc(1)
-        root
+        root # parent = ...
       else: Unreachable("DOALC: Impossible Dnk8 pow.")
-    of DnkNEG: DaoNode(kind: DnkNEG, pow: root.pow + 1, parent: nil)
+    of DnkNEG:
+      DaoNode(kind: DnkNEG, pow: root.pow + 1, parent: nil)
   # Bind parents ONLY if it's not the special modification case
   if parent.kind != Dnk8:
     if parent.kind == DnkMIX:
@@ -273,3 +462,24 @@ proc doalcReader*(reader: var Reader) {.inline.} =
     root.parent = parent
     reader.path.dataRoot = parent
   discard mergeReader(reader)
+
+proc dealcReader*(reader: var Reader) {.inline.} = 
+  let root = reader.path.dataRoot
+  let stored = reader.store
+  case root.kind:
+    of DnkMIX:
+      reader.path.dataRoot = reader.path.dataRoot.lc
+      reader.path.dataRoot.parent = nil
+    of DnkPOS, DnkNEG:
+      root.pow -= 1
+      if root.pow == 3:
+        let val = if root.kind == DnkPOS: 0xFF'u8 else: 0'u8
+        reader.path.dataRoot = DaoNode(kind: Dnk8, pow: 3, parent: nil, val: val)
+    of Dnk8:
+      if root.pow > 0:
+        root.pow -= 1
+        root.val = root.val shr (1 shl root.pow)
+      else:
+        # Destroy path
+        reader.path.dataRoot = nil
+  reader = stored.retrieve
