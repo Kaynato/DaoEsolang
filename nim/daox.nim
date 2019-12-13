@@ -128,7 +128,8 @@ proc initPath(parent: Path = nil, dataRoot: DaoNode = nil): Path =
 
 proc swaps(EXEC: var Executor) =
   if EXEC.oplevel > 0'u8: return
-  swapsReader(EXEC.data)
+  withSafeModify(EXEC):
+    swapsReader(EXEC.data)
 
 proc later(EXEC: var Executor) =
   if EXEC.oplevel < 4'u8:
@@ -144,27 +145,6 @@ proc merge(EXEC: var Executor) =
   discard mergeReader(EXEC.data)
 
 # proc sifts() # TODO
-
-#[ 
-  When execs,
-    Push the current LIVE_READER (Start Location, Instruction Reader, Data Path) to the storage stack.
-    Create a new Reader for LIVE_READER:
-      new start location = leftmost pow 3 node at instruction reader / round up
-        if cannot round up, the instruction pointer is "crushed" and execs is nop
-      instruction reader is cloned from the current Reader
-        and navigates to the new start location
-      data path is the CHILD of the path which has the data the instruction reader points to.
-
-  Something to think about is
-    when you call EXECS such that
-    the data path is an existing path, in which case... dangers arise
-
-  When a program finishes, should pop from LIVE_STACK. If empty, terminate.
-
-# TODO
-  Consider making "path in node" where each call of EXECS produces a new Path....
-
-]#
 
 proc execs(EXEC: var Executor, STACK: var seq[StoredExecutor]) =
   if EXEC.oplevel > 7'u8: return
@@ -239,7 +219,8 @@ proc dealc(EXEC: var Executor) =
 proc split(EXEC: var Executor) =
   if EXEC.oplevel > 6'u8: return
   if EXEC.oplevel == 0'u8:
-    splitReader(EXEC.data)
+    withSafeModify(EXEC):
+      splitReader(EXEC.data)
   halveReader(EXEC.data)
 
 # proc polar() # TODO
@@ -248,9 +229,13 @@ proc doalc(EXEC: var Executor) =
   if EXEC.oplevel > 0'u8: return
   # Allocation is performed on the root of the reader's node, not the executing path.
   # Create parent
-  doalcReader(EXEC.data)
+  withSafeModify(EXEC):
+    doalcReader(EXEC.data)
 
-# proc input() # TODO
+proc input(EXEC: var Executor, inputStream: File) =
+  if EXEC.oplevel > 5'u8: return
+  withSafeModify(EXEC):
+    inputReader(EXEC.data, inputStream)
 
 proc symToVal(ch: char): uint8 =
   ## Convert symbols into bytes
@@ -273,76 +258,23 @@ proc symToVal(ch: char): uint8 =
     of ';': 0x0F'u8
     else: 0x00'u8
 
-proc initTLP(hexData: seq[uint8]): Executor =
+proc initTLP(bytes: seq[uint8]): Executor =
   ## Convert seq of hexes into an equivalent Path
-  if hexData.len == 0: return
-
-  var nodes = initDeque[DaoNode]()
-
-  for i in countup(0, hexData.len - 2, 2):
-    let val = (hexData[i] shl 4) or hexData[i+1]
-    nodes.addLast(DaoNode(kind: Dnk8, pow: 3, val: val, parent: nil))
-
-  if hexData.len mod 2 == 1:
-    # Take care of remainder if it exists.
-    nodes.addLast DaoNode(kind: Dnk8, pow: 3, val: hexData[^1] shl 4)
-
-  let execStart = nodes[0]
-
-  # Treeify.
-  while nodes.len > 1:
-    let lc = nodes.popFirst()
-    let rcPeek = nodes.peekFirst()
-    
-    if lc.pow < rcPeek.pow:
-      # Need zero padding on right
-      if lc.kind == DnkNEG:
-        # If left is blank, just escalate
-        inc lc.pow
-        nodes.addLast lc
-      elif (lc.kind == Dnk8 and lc.val == 0'u8):
-        # Blank dnk8
-        nodes.addLast DaoNode(kind: DnkNEG, pow: lc.pow + 1)
-      else:
-        # Otherwise, replace as lc of new mix parent with empty rc
-        let parent = DaoNode(kind: DnkMIX, pow: lc.pow + 1, lc: lc)
-        if parent.pow > 3:
-          parent.rc = DaoNode(kind: DnkNEG, pow: lc.pow)
-        elif parent.pow == 3:
-          parent.rc = DaoNode(kind: Dnk8, pow: 3, val: 0'u8)
-        else:
-          Unreachable("initTLP: ILLEGAL - Tried to create node with pow under 2")
-        nodes.addLast parent
-    elif lc.pow == rcPeek.pow:
-      let rc = nodes.popFirst()
-      # Equal power. Check for pure nodes first
-      if (lc.kind == DnkNEG or (lc.kind == Dnk8 and lc.val == 0'u8)) and
-         (rc.kind == DnkNEG or (rc.kind == Dnk8 and rc.val == 0'u8)):
-        nodes.addLast DaoNode(kind: DnkNEG, pow: lc.pow + 1)
-      elif (lc.kind == DnkPOS or (lc.kind == Dnk8 and lc.val == 0xFF'u8)) and
-           (rc.kind == DnkPOS or (rc.kind == Dnk8 and rc.val == 0xFF'u8)):
-        nodes.addLast DaoNode(kind: DnkPOS, pow: lc.pow + 1)
-      else:
-        let parent = DaoNode(kind: DnkMIX, pow: lc.pow + 1, parent: nil, lc: lc, rc: rc)
-        lc.parent = parent
-        rc.parent = parent
-        nodes.addLast parent
-    else:
-      Unreachable("initTLP: ILLEGAL - First child had greater pow than second.")
+  let tree = treeify(bytes)
 
   # Now we have made the tree for the TLP.
-  var tlp = initPath(dataRoot = nodes.popFirst())
+  var tlp = initPath(dataRoot = tree.root)
 
   # Special case child construction
   var child = initPath(parent = tlp)
 
   # Special case executor construction
   result.oplevel = 0
-  result.execStart = Reader(path: tlp, mode: RmPOS, node: execStart, pow: 2, idx: 0)
-  result.exec = Reader(path: tlp, mode: RmPOS, node: execStart, pow: 2, idx: 0)
+  result.execStart = Reader(path: tlp, mode: RmPOS, node: tree.firstHex, pow: 2, idx: 0)
+  result.exec = Reader(path: tlp, mode: RmPOS, node: tree.firstHex, pow: 2, idx: 0)
   result.data = Reader(path: child, mode: RmPOS, node: child.dataRoot, pow: 0, idx: 0)
 
-proc interpret(prg: string, EXEC: var Executor) =
+proc interpret(prg: string, EXEC: var Executor, inputStream: File) =
   ## Directly interpret daoyu symbols
   # Unstable
   # TODO make this NOT reliant on EXEC being passed in please
@@ -359,13 +291,13 @@ proc interpret(prg: string, EXEC: var Executor) =
       of '>': EXEC.delev
       # of '=': EXEC.equal
       of '(': EXEC.halve
-      # of '<': EXEC.uplev
+      of '<': EXEC.uplev
       of ':': EXEC.reads
-      # of 'S': EXEC.dealc
+      of 'S': EXEC.dealc
       of '[': EXEC.split
       # of '*': EXEC.polar
       of '$': EXEC.doalc
-      # of ';': EXEC.input
+      # of ';': EXEC.input(inputStream)
       else: discard
     # echo c, " to ", EXEC.reader.addr
 
@@ -378,7 +310,7 @@ const OP_NAMES = [
 
 const OP_SYM = ".!/)%#>=(<:S[*$;"
 
-proc run(EXEC: var Executor, debug: static bool = false) =
+proc run(EXEC: var Executor, inputStream: File, debug: static bool = false) =
   ## Run until termination
   var STACK: seq[StoredExecutor]
   var next_cmd: uint8 = EXEC.exec.getHex()
@@ -414,7 +346,7 @@ proc run(EXEC: var Executor, debug: static bool = false) =
         of 0xC: split(EXEC) # TODO might change readers
         # of 0xD: polar(EXEC)
         of 0xE: doalc(EXEC) # TODO might change readers
-        # of 0xF: input(EXEC) # TODO might change readers
+        of 0xF: input(EXEC, inputStream) # TODO might change readers
         else: discard
 
       if EXEC.exec.pow != 2:
@@ -435,7 +367,7 @@ proc run(EXEC: var Executor, debug: static bool = false) =
     # Coming out here means that the EXEC has terminated.
     # We should be careful about ... memory leaks.
     if STACK.len == 0:
-      when debug: echo "Stack length zero, pop"
+      when debug: echo "Stack length zero, terminating execution"
       return
     EXEC = STACK.pop.retrieve
 
@@ -444,14 +376,6 @@ proc run(EXEC: var Executor, debug: static bool = false) =
 # proc repl()
 
 # TODO list
-# node -> reader map and refpassing contained within the run/interpret context
-# swaps fix
-# split fix
-# doalc fix
-# dealc
-# input
-# uplev
-# cat confirmed
 # polar
 # equal
 # truth machine confirmed
@@ -460,13 +384,16 @@ proc run(EXEC: var Executor, debug: static bool = false) =
 # sifts
 
 when isMainModule:
+  # Hmm... dealc can be used to kick the instruction pointer backwards
 
   # const prg = "$$$(/(/("
   # const prg = "$$$(([]!)/([])):((/[])/([]!/[]!)):(/[])::[/([]!/[])]!:[[[]]!]:[([]!)/[/[]!]!]:[/([]!/[])]!:[([]!)/(/[])]:((/[])/[]):(/([]!)):([[]]!/[[]!]!):[[[]/[]]]!:"
   
   # Helloworld 2
-  const prg = "))))))))/:((((((S...............%(>#>[>[>;/.==>;=/>[>%/!.:......"
+  # const prg = "))))))))/:((((((S...............%(>#>[>[>;/.==>;=/>[>%/!.:......"
 
+  # Cat
+  const prg = "$$$>;:<"
 
   # Uplev test
   # const prg = "$..<"
@@ -478,10 +405,11 @@ when isMainModule:
   # Initialize program stack and base executor
   var EXEC = hexData.initTLP
   
-  echo EXEC.exec.path.dataRoot
+  # echo EXEC.exec.path.dataRoot
 
   # execs(EXEC, STACK)
 
   # prg.interpret(EXEC)
 
-  EXEC.run(debug=true)
+  EXEC.run(stdin, debug=false)
+

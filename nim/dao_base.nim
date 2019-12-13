@@ -1,3 +1,6 @@
+import deques
+import dao_errors
+
 type
   DaoNodeKind* = enum
     DnkNEG, DnkPOS             ##  Pure nodes of greater than 8 bits
@@ -56,3 +59,62 @@ type
     child*:       Path         ##  Child program (may be nil)
     depth*:       uint64       ##  How deep is this in the program tree?
     dataRoot*:    DaoNode      ##  Points to the root of the data owned by this path
+
+
+proc treeify*(bytes: openarray[int8 | uint8]): tuple[firstHex: DaoNode, root: DaoNode]=
+  if bytes.len == 0: return
+
+  var nodes = initDeque[DaoNode]()
+
+  for i in countup(0, bytes.len - 2, 2):
+    let val = (bytes[i] shl 4) or bytes[i+1]
+    nodes.addLast(DaoNode(kind: Dnk8, pow: 3, val: val, parent: nil))
+
+  if bytes.len mod 2 == 1:
+    # Take care of remainder if it exists.
+    nodes.addLast DaoNode(kind: Dnk8, pow: 3, val: bytes[^1] shl 4)
+
+  result.firstHex = nodes[0]
+
+  # Treeify.
+  while nodes.len > 1:
+    let lc = nodes.popFirst()
+    let rcPeek = nodes.peekFirst()
+    
+    if lc.pow < rcPeek.pow:
+      # Need zero padding on right
+      if lc.kind == DnkNEG:
+        # If left is blank, just escalate
+        inc lc.pow
+        nodes.addLast lc
+      elif (lc.kind == Dnk8 and lc.val == 0'u8):
+        # Blank dnk8
+        nodes.addLast DaoNode(kind: DnkNEG, pow: lc.pow + 1)
+      else:
+        # Otherwise, replace as lc of new mix parent with empty rc
+        let parent = DaoNode(kind: DnkMIX, pow: lc.pow + 1, lc: lc)
+        if parent.pow > 3:
+          parent.rc = DaoNode(kind: DnkNEG, pow: lc.pow)
+        elif parent.pow == 3:
+          parent.rc = DaoNode(kind: Dnk8, pow: 3, val: 0'u8)
+        else:
+          Unreachable("initTLP: ILLEGAL - Tried to create node with pow under 2")
+        nodes.addLast parent
+    elif lc.pow == rcPeek.pow:
+      let rc = nodes.popFirst()
+      # Equal power. Check for pure nodes first
+      if (lc.kind == DnkNEG or (lc.kind == Dnk8 and lc.val == 0'u8)) and
+         (rc.kind == DnkNEG or (rc.kind == Dnk8 and rc.val == 0'u8)):
+        nodes.addLast DaoNode(kind: DnkNEG, pow: lc.pow + 1)
+      elif (lc.kind == DnkPOS or (lc.kind == Dnk8 and lc.val == 0xFF'u8)) and
+           (rc.kind == DnkPOS or (rc.kind == Dnk8 and rc.val == 0xFF'u8)):
+        nodes.addLast DaoNode(kind: DnkPOS, pow: lc.pow + 1)
+      else:
+        let parent = DaoNode(kind: DnkMIX, pow: lc.pow + 1, parent: nil, lc: lc, rc: rc)
+        lc.parent = parent
+        rc.parent = parent
+        nodes.addLast parent
+    else:
+      Unreachable("initTLP: ILLEGAL - First child had greater pow than second.")
+
+  result.root = nodes.popFirst()

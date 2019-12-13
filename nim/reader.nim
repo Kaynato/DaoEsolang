@@ -390,6 +390,58 @@ proc readsReader*(reader: var Reader) {.inline.} =
         elif reader.pow == 2: stdout.write (node.val shr (2 - reader.idx) and 0xF'u8).toBin4
         else: Unreachable("READS: Impossible reader pow.")
 
+proc inputReader*(reader: var Reader, inputStream: File) {.inline.} =
+  let node = reader.node
+  if reader.pow > 3:
+    # More than one byte
+    var charbuf = newSeq[uint8](1 shl (reader.pow - 3))
+    discard inputStream.readBytes(charbuf, 0, charbuf.len)
+    let inputTree = treeify(charbuf)
+    # '\' 92 '\r' 13 '\n' 10
+    # What a terrible night to have a curse
+
+    case reader.mode:
+    of RmNODE:
+      # Snip snip, replace this node
+      if reader.node == reader.path.dataRoot:
+        # If we were root, assign to path root first
+        reader.path.dataRoot = inputTree.root
+      else:
+        # If we weren't root
+        let parent = reader.node.parent
+        if parent == nil:
+          Unreachable("INPUT: Non-root had nil parent")
+        # Hook up parent and child
+        inputTree.root.parent = parent
+        if reader.node == parent.lc:
+          parent.lc = inputTree.root
+        elif reader.node == parent.rc:
+          parent.rc = inputTree.root
+        else:
+          Unreachable("INPUT: Node with hanging parent")
+      # Assign to node
+      reader.node = inputTree.root
+    of RmPOS:
+      case reader.node.kind:
+      of DnkPOS:
+        Todo("Heterogenize DnkPOS Interior")
+      of DnkNEG:
+        Todo("Heterogenize DnkNEG Interior")
+      of Dnk8:
+        Unreachable("INPUT: POS mode Dnk8 despite having checked pow > 3")
+      of DnkMIX:
+        Unreachable("INPUT: POS mode inside DnkMIX")
+  else:
+    # One byte or less
+    let val = inputStream.readChar().uint8
+    if reader.node.kind != Dnk8:
+      Unreachable("INPUT: Under pow 3 but node wasn't Dnk8")
+    if reader.pow == 3:      reader.node.val = val
+    elif reader.pow == 2:    reader.node.val = val and 0x0F'u8
+    elif reader.pow == 1:    reader.node.val = val and 0x03'u8
+    elif reader.pow == 0:    reader.node.val = val and 0x01'u8
+    else: Unreachable("INPUT: Impossible Dnk8 pow: " & $(reader.pow))
+
 proc splitReader*(reader: var Reader) {.inline.} =
   let node = reader.node
   case reader.mode:
@@ -434,7 +486,8 @@ proc splitReader*(reader: var Reader) {.inline.} =
         Todo("Heterogenize DnkNEG Interior")
       of DnkPOS:
         Todo("Heterogenize DnkPOS Interior")
-      of DnkMIX: Unreachable("SPLIT: POS mode inside DnkMIX")
+      of DnkMIX:
+        Unreachable("SPLIT: POS mode inside DnkMIX")
 
 proc doalcReader*(reader: var Reader) {.inline.} =
   let root = reader.path.dataRoot
