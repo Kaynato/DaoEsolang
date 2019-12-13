@@ -1,6 +1,11 @@
 import deques
 import dao_errors
 
+const
+  DEBUG = true
+  FILE_SYMBOLIC = ".dao"
+  FILE_COMPILED = ".wuwei"
+
 type
   DaoNodeKind* = enum
     DnkNEG, DnkPOS             ##  Pure nodes of greater than 8 bits
@@ -88,18 +93,20 @@ proc treeify*(bytes: openarray[int8 | uint8]): tuple[firstHex: DaoNode, root: Da
         inc lc.pow
         nodes.addLast lc
       elif (lc.kind == Dnk8 and lc.val == 0'u8):
-        # Blank dnk8
+        # Blank dnk8 - escalate into DnkNEG
         nodes.addLast DaoNode(kind: DnkNEG, pow: lc.pow + 1)
       else:
         # Otherwise, replace as lc of new mix parent with empty rc
         let parent = DaoNode(kind: DnkMIX, pow: lc.pow + 1, lc: lc)
-        if parent.pow > 3:
-          parent.rc = DaoNode(kind: DnkNEG, pow: lc.pow)
-        elif parent.pow == 3:
-          parent.rc = DaoNode(kind: Dnk8, pow: 3, val: 0'u8)
+        lc.parent = parent
+        if parent.pow > 3'u64:
+          parent.rc = DaoNode(kind: DnkNEG, parent: parent, pow: lc.pow)
+        elif parent.pow == 3'u64:
+          parent.rc = DaoNode(kind: Dnk8, parent: parent, pow: 3, val: 0'u8)
         else:
           Unreachable("initTLP: ILLEGAL - Tried to create node with pow under 2")
         nodes.addLast parent
+
     elif lc.pow == rcPeek.pow:
       let rc = nodes.popFirst()
       # Equal power. Check for pure nodes first
@@ -118,3 +125,77 @@ proc treeify*(bytes: openarray[int8 | uint8]): tuple[firstHex: DaoNode, root: Da
       Unreachable("initTLP: ILLEGAL - First child had greater pow than second.")
 
   result.root = nodes.popFirst()
+
+when DEBUG:
+  import strformat
+  from strutils import toHex, toBin
+
+  # proc `$`(node: DaoNode): string =
+  #   if node == nil:
+  #     Unreachable("DEBUG: Tried to print nil node")
+  #   result.add($(node.kind))
+  #   let treePos = (if node.parent != nil: "CHLD" else: "ROOT")
+  #   result.add(fmt"({treePos}: pow: {node.pow}")
+  #   case node.kind:
+  #     of DnkMIX:
+  #       result.add(fmt", lc: {node.lc}, rc: {node.rc}")
+  #     of Dnk8:
+  #       if node.pow == 3:   result.add(fmt", val: x{node.val.toHex}")
+  #       elif node.pow == 2: result.add(fmt", val: x{node.val.toHex[1]}")
+  #       elif node.pow == 1: result.add(fmt", val: b{node.val.BiggestInt.toBin(2)}")
+  #       elif node.pow == 0: result.add(fmt", val: b" & ("01"[node.val]))
+  #       else: Unreachable("Impossible Dnk8 pow")
+  #     of DnkNEG, DnkPOS: discard
+  #   result.add(")")
+
+  proc `$`*(path: Path): string =
+    result.add fmt"[{path.depth: 3}"
+    result.add if path.owner != nil: '^' else: ' '
+    result.add if path.child != nil: 'v' else: ' '
+    result.add ']'
+
+  proc `$`*(node: DaoNode): string =
+    if node == nil:
+      return "(nil)"
+    case node.kind:
+      of DnkMIX:
+        result.add(fmt"({node.lc} {node.rc})")
+      of Dnk8:
+        if node.pow == 3:   result.add(fmt"(x{node.val.toHex})")
+        elif node.pow == 2: result.add(fmt"(x{node.val.toHex[1]})")
+        elif node.pow == 1: result.add(fmt"(b{node.val.BiggestInt.toBin(2)})")
+        elif node.pow == 0: result.add(fmt"(b" & ("01"[node.val]) & ")")
+        else: Unreachable("Impossible Dnk8 pow")
+      of DnkNEG: result.add(fmt"({node.pow} 0)")
+      of DnkPOS: result.add(fmt"({node.pow} 1)")
+
+  proc readNode*(reader: Reader): string =
+    let node = reader.node
+    if node == nil:
+      return "(nil)"
+    case node.kind:
+      of DnkMIX:
+        result.add(fmt"({node.lc} {node.rc})")
+        assert node.lc.parent == node
+        assert node.rc.parent == node
+      of Dnk8:
+        var val: string
+        if reader.pow == 0:   val = "b" & "01"[node.val shr (7 - (reader.idx and 0b111'u8).int) and 1'u8]
+        elif reader.pow == 1: val = "b" & (node.val shr ((3 - (reader.idx and 0b11'u8).int) shl 1) and 0b11'u8).BiggestInt.toBin(2)
+        elif reader.pow == 2: val = "x" & (node.val shr ((1 - (reader.idx and 0b1'u8).int) shl 2) and 0xF'u8).toHex[1]
+        elif reader.pow == 3: val = "x" & node.val.toHex
+        else: Unreachable("READNODE: Impossible Dnk8 pow.")
+
+        result.add(fmt"({val})")
+
+      of DnkNEG: result.add(fmt"({node.pow} 0)")
+      of DnkPOS: result.add(fmt"({node.pow} 1)")
+
+  proc `$`*(reader: Reader): string =
+    let nodeStr = if reader.node != nil: fmt"{$reader.node.kind} {reader.readNode}" else: "nil"
+    case reader.mode:
+      of RmNODE: fmt"(Path: {reader.path} pow: {reader.pow} idx: {reader.idx} Node: {nodeStr})"
+      of RmPOS:  fmt"(Path: {reader.path} pow: {reader.pow} idx: {reader.idx} NPos: {nodeStr})"
+
+  proc `==`*(a, b: Reader): bool =
+    (a.path == b.path) and (a.pow == b.pow) and (a.idx == b.idx) and (a.node == b.node) and (a.mode == b.mode)

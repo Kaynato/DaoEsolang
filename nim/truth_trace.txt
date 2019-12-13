@@ -1,0 +1,620 @@
+(((((((((xEE) (xEF)) ((x8D) (xC7))) (((xCD) (x3D)) ((xB7) (xB7)))) ((((xB7) (xB7)) ((xB8) (x13))) (((x7B) (xDB)) ((x7B) (x7B))))) (((((x82) (x13)) ((x71) (xDB))) (((xDB) (x7B)) ((x7B) (x31)))) ((((x7C) (x73)) ((xDB) (x7B))) (((x7B) (x7B)) ((x88) (x13)))))) ((((((x37) (xC7)) ((x3D) (xB7))) (((xB7) (xB7)) ((xB8) (x13)))) ((((x7C) (x73)) ((xDB) (x7B))) (((x7B) (x7B)) ((x81) (x31))))) (((((xEE) (xEE)) ((x88) (x28))) (((x28) (x28)) ((x28) (xC3)))) ((((x12) (xC3)) ((x33) (x33))) (((x32) (x88)) ((x88) (xC3))))))) (((((((x12) (xC3)) ((x13) (x28))) (((xC3) (x12)) ((xC3) (x13)))) ((((x32) (x88)) ((xC2) (xC3))) (((x13) (x12)) ((x8C) (x32))))) (((((xC3) (x33)) ((x28) (xC2))) (((xC3) (x13)) ((x12) (xC2)))) ((((xC3) (x31)) ((x33) (x32))) (((x88) (x8C)) ((x2C) (x31)))))) ((((((x31) (x2C)) ((x2C) (x31))) (((x33) (x28)) ((x8C) (x32)))) ((((xC3) (x32)) ((x8C) (x33))) (((x33) (x28)) ((x88) (xC3))))) (((((x32) (x8C)) ((x33) (x32))) (((x88) (xC3)) ((x32) (x8C)))) ((((x32) (xC3)) ((x13) (x33))) (((x33) (x38)) ((x82) (x82)))))))) ((((((((x82) (x82)) ((x53) (x33))) (((x3B) (xBB)) ((xBB) (xBB)))) (6 0)) (7 0)) (8 0)) (9 0)))
+Init exec : data : (Path: [  1^ ] pow: 0 idx: 0 NPos: Dnk8 (b0)) 
+          : path : (b0)
+cmd was $ : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (b00)
+cmd was $ : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (x0)
+cmd was $ : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x00)) 
+          : path : (x00)
+cmd was ; : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x30)) 
+          : path : (x30)
+
+__ Enter first four bits
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+
+__ Polarize all hexes except 0001 0011 0101 0111
+skipped [ :
+cmd was * : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped [ :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped ) :
+cmd was * : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+
+__ Kill 1100
+skipped S :
+cmd was * : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+
+__ Enter first two bits
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (x30)
+__ If 01XX form, turn into 10XX form. (10XX was filted out previously)
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (x30)
+__ Then come back out
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+
+__ Kill 10xx form
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was * : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+
+__ Check the next two bits. Since only valid input are x30 and x31, turn 01 form into 10 form. (10 form filtered out previously)
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (x30)
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b11)) 
+          : path : (x30)
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b11)) 
+          : path : (x30)
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+
+__ Kill 0010 form
+skipped ! :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was * : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was * : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (x30)
+
+__ Come out to select the whole byte.
+__ Now we know the byte is of form x3?
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x30)) 
+          : path : (x30)
+
+__ Swap the bytes.
+cmd was ! : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+
+__ We use this to filter the 5th bit of the byte, which is now in the 0th position.
+__ Since we know the bits 0..3 have to be of form 0011, we can exploit the position for equals-checking.
+__ States: 0xxx0011 1xxx0011
+skipped [ :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+__ States: 0xxx0011 11110011 - We immediately filter out all 1xxx0011 forms
+skipped ) :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+
+__ Kill 1xxx0011
+skipped S :
+cmd was * : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+
+__ Switch the 5th and 6th bit positions. Now we make sure the 6th bit is also zero.
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (x03)
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (x03)
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (x03)
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (x03)
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+
+__ Do the same thing as before to make sure the bit in position 0 (6th in byte) is 0.
+skipped [ :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped ) :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was * : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+
+__ States: 00xx0011 We need to check the 7th in byte. Swap that group of two to the front.
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (x03)
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (x03)
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+
+__ Same thing as before.
+skipped [ :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped ) :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was * : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+skipped S :
+cmd was = : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+
+__ State is now 0x000011. But the byte position is scrambled from 12345678 into 78561234.
+__ We'll unscramble it.
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (x03)
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (x03)
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x03)) 
+          : path : (x03)
+cmd was ! : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x30)) 
+          : path : (x30)
+
+__ Position has been restored to 12345678.
+__ Now we write the program in the second half. Nops will pad the first half.
+     @ Program would be:
+     @ >) @ Normalize and ascend into F2.
+     @ )))     @ Select first byte.
+     @ =:=S  @ Print 0 and kill program if 0
+     @ =*:
+     @ ((((
+     @ <
+     @ 0110
+     @ 00110011 00110011 01111010 01111011 
+     @ 01111101 10101000 10001000 10001001
+     @ AKA: 6 33337A7B7DA88889
+__ First we allocate the space for the program to completely exist in the second half.
+cmd was $ : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkMIX ((x30) (x00))) 
+          : path : ((x30) (x00))
+cmd was $ : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkMIX (((x30) (x00)) (4 0))) 
+          : path : (((x30) (x00)) (4 0))
+cmd was $ : data : (Path: [  1^ ] pow: 6 idx: 0 Node: DnkMIX ((((x30) (x00)) (4 0)) (5 0))) 
+          : path : ((((x30) (x00)) (4 0)) (5 0))
+cmd was $ : data : (Path: [  1^ ] pow: 7 idx: 0 Node: DnkMIX (((((x30) (x00)) (4 0)) (5 0)) (6 0))) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+
+__ Then we write the program... this'll take a while.
+__ Navigate to write the x6 (DELEV)
+cmd was ( : data : (Path: [  1^ ] pow: 6 idx: 0 Node: DnkMIX ((((x30) (x00)) (4 0)) (5 0))) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was ( : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkMIX (((x30) (x00)) (4 0))) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was / : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was ( : data : (Path: [  1^ ] pow: 4 idx: 0 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was / : data : (Path: [  1^ ] pow: 4 idx: 1 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was ( : data : (Path: [  1^ ] pow: 3 idx: 2 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was / : data : (Path: [  1^ ] pow: 3 idx: 3 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 6 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 7 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+
+__ Write the x6 (DELEV)
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 14 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) (5 0)) (6 0))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 4 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x08)))) (6 0))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x08)))) (6 0))
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b01)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x04)))) (6 0))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x04)))) (6 0))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 6 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x6)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+
+__ Come out
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x06)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+cmd was ) : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkMIX ((x00) (x06))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+cmd was ) : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkMIX ((4 0) ((x00) (x06)))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+cmd was ) : data : (Path: [  1^ ] pow: 6 idx: 0 Node: DnkMIX ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+
+__ Go to second program half
+cmd was / : data : (Path: [  1^ ] pow: 6 idx: 0 Node: DnkNEG (6 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+
+__ Write the program after the DELEV
+cmd was ( : data : (Path: [  1^ ] pow: 5 idx: 0 NPos: DnkNEG (6 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+
+__ Write 33 33 7A 7B
+cmd was ( : data : (Path: [  1^ ] pow: 4 idx: 0 NPos: DnkNEG (6 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+
+__ Of that, 33 33
+cmd was ( : data : (Path: [  1^ ] pow: 3 idx: 0 NPos: DnkNEG (6 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+
+__ Should write x33 x33
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: DnkNEG (6 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) (6 0))
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((xC0) (x00)) (4 0)) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (xC)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((xC0) (x00)) (4 0)) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x30) (x00)) (4 0)) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x30) (x00)) (4 0)) (5 0)))
+__ WRONG...
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x3C) (x00)) (4 0)) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (xC)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x3C) (x00)) (4 0)) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x3)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x00)) (4 0)) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x33)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x00)) (4 0)) (5 0)))
+
+__ Second x33
+cmd was / : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x00)) (4 0)) (5 0)))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x00)) (4 0)) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (xC0)) (4 0)) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (xC)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (xC0)) (4 0)) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x30)) (4 0)) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x30)) (4 0)) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x3C)) (4 0)) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (xC)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x3C)) (4 0)) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x3)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) (4 0)) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x33)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) (4 0)) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkMIX ((x33) (x33))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) (4 0)) (5 0)))
+
+__ Done with x33 x33 . Onto x7A x7B.
+cmd was / : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkNEG (4 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) (4 0)) (5 0)))
+cmd was ( : data : (Path: [  1^ ] pow: 3 idx: 0 NPos: DnkNEG (4 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) (4 0)) (5 0)))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: DnkNEG (4 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) (4 0)) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((xC0) (x00))) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((xC0) (x00))) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 2 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((xE0) (x00))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((xE0) (x00))) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b01)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((xD0) (x00))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (xD)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((xD0) (x00))) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x7)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x70) (x00))) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x70) (x00))) (5 0)))
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x70) (x00))) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 4 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x78) (x00))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x78) (x00))) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x78) (x00))) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 6 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x00))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x00))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (xA)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x00))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x7A)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x00))) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x00))) (5 0)))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x00))) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (xC0))) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (xC0))) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 2 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (xE0))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (xE0))) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b01)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (xD0))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (xD)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (xD0))) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x7)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x70))) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x70))) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7C))) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7C))) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 6 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7E))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7E))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (xE)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7E))) (5 0)))
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (xB)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x7B)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkMIX ((x7A) (x7B))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (5 0)))
+cmd was ) : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkMIX (((x33) (x33)) ((x7A) (x7B)))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (5 0)))
+cmd was / : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (5 0)))
+cmd was ( : data : (Path: [  1^ ] pow: 4 idx: 0 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (5 0)))
+cmd was ( : data : (Path: [  1^ ] pow: 3 idx: 0 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (5 0)))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: DnkNEG (5 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (5 0)))
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((xC0) (x00)) (4 0))))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((xC0) (x00)) (4 0))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 2 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((xE0) (x00)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((xE0) (x00)) (4 0))))
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b01)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((xD0) (x00)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (xD)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((xD0) (x00)) (4 0))))
+cmd was ! : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x7)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x70) (x00)) (4 0))))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x70) (x00)) (4 0))))
+cmd was [ : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b11)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7C) (x00)) (4 0))))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7C) (x00)) (4 0))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 6 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7E) (x00)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7E) (x00)) (4 0))))
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b01)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x00)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (xD)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x00)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x7D)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x00)) (4 0))))
+cmd was / : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x00)) (4 0))))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x00)) (4 0))))
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x00)) (4 0))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 0 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x80)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x80)) (4 0))))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (x80)) (4 0))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 2 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA0)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 1 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA0)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (xA)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA0)) (4 0))))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA0)) (4 0))))
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA0)) (4 0))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 4 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x8)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (xA8)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was ) : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkMIX ((x7D) (xA8))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was / : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkNEG (4 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was ( : data : (Path: [  1^ ] pow: 3 idx: 0 NPos: DnkNEG (4 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: DnkNEG (4 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: DnkNEG (4 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) (4 0))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 0 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x80) (x00)))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x80) (x00)))))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x8)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x80) (x00)))))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x80) (x00)))))
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x80) (x00)))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 4 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x00)))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x00)))))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x8)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x00)))))
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x88)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x00)))))
+cmd was / : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x00)))))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x00)))))
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x00)))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 0 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x80)))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x80)))))
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x8)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x80)))))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x80)))))
+cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x80)))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 4 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x88)))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 2 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x88)))))
+cmd was / : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x88)))))
+cmd was [ : data : (Path: [  1^ ] pow: 0 idx: 6 NPos: Dnk8 (b1)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x8A)))))
+cmd was ) : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b10)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x8A)))))
+cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 3 NPos: Dnk8 (b01)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+
+__ Ok, the program is constructed now. Come out from selecting the part after the DELEV.
+cmd was ) : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x9)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ) : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x89)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ) : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkMIX ((x88) (x89))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ) : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkMIX (((x7D) (xA8)) ((x88) (x89)))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ) : data : (Path: [  1^ ] pow: 6 idx: 0 Node: DnkMIX ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89))))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ) : data : (Path: [  1^ ] pow: 7 idx: 0 Node: DnkMIX (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+
+__ We'll select the first half.
+cmd was ( : data : (Path: [  1^ ] pow: 6 idx: 0 Node: DnkMIX ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+
+__ We'll select the DELEV right before the program section.
+cmd was ( : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkMIX (((x30) (x00)) (4 0))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was / : data : (Path: [  1^ ] pow: 5 idx: 0 Node: DnkMIX ((4 0) ((x00) (x06)))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ( : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkNEG (4 0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was / : data : (Path: [  1^ ] pow: 4 idx: 0 Node: DnkMIX ((x00) (x06))) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ( : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was / : data : (Path: [  1^ ] pow: 3 idx: 0 Node: Dnk8 (x06)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ( : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was / : data : (Path: [  1^ ] pow: 2 idx: 1 NPos: Dnk8 (x6)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+
+__ If the input was x31, we shouldn't come out of here.
+cmd was # : data : (Path: [  2^ ] pow: 0 idx: 0 NPos: Dnk8 (b0)) 
+          : path : (b0)
+
+__ This is the program we worked so hard to create...
+__ Normalize the oplevel and ascend into Path 1.
+cmd was > : data : (Path: [  2^ ] pow: 0 idx: 0 NPos: Dnk8 (b0)) 
+          : path : (b0)
+cmd was ) : data : (Path: [  1^v] pow: 0 idx: 0 NPos: Dnk8 (b0)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+
+__ Select first byte
+cmd was ) : data : (Path: [  1^v] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ) : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was ) : data : (Path: [  1^v] pow: 3 idx: 0 Node: Dnk8 (x30)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+
+__ Print 0 and kill program if 0
+cmd was = : data : (Path: [  1^v] pow: 3 idx: 0 Node: Dnk8 (x30)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+0cmd was : : data : (Path: [  1^v] pow: 3 idx: 0 Node: Dnk8 (x30)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+cmd was = : data : (Path: [  1^v] pow: 3 idx: 0 Node: Dnk8 (x30)) 
+          : path : (((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06)))) ((((x33) (x33)) ((x7A) (x7B))) (((x7D) (xA8)) ((x88) (x89)))))
+
+__ It was 0, so kill program :)
+cmd was S : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+cmd was . : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+cmd was . : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+cmd was . : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+cmd was . : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+cmd was . : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+cmd was . : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+cmd was . : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+cmd was > : data : (Path: [  1^v] pow: 2 idx: 0 NPos: Dnk8 (x3)) 
+          : path : ((((x30) (x00)) (4 0)) ((4 0) ((x00) (x06))))
+Exited with next_cmd 255
+Exited with next_cmd 255
+Stack length zero, terminating execution

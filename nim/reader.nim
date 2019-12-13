@@ -21,6 +21,7 @@
 
 import dao_base
 import dao_errors
+import daox
 
 const lookup4 = [
   "0000", "0001", "0010", "0011",
@@ -33,8 +34,8 @@ const lookup2 = [
   "00", "01", "10", "11"
 ]
 
-template toBin2(c: uint8): string = lookup2[c]
-template toBin4(c: uint8): string = lookup4[c]
+template toBin2*(c: uint8): string = lookup2[c]
+template toBin4*(c: uint8): string = lookup4[c]
 
 # Forward declare
 proc halveReader*(reader: var Reader) {.inline.}
@@ -70,6 +71,9 @@ proc store*(reader: Reader): StoredReader =
   var node = reader.node
   # echo pow, " ", result.rootPow
   while pow < result.rootPow:
+    if node.parent == nil:
+      echo "STORE READER: Parent of ", $(node), " at pow ", pow, " was nil but rootPow was ", result.rootPow
+      assert false
     if node == node.parent.lc:
       move = (move shl 1)
     elif node == node.parent.rc:
@@ -100,7 +104,7 @@ proc retrieve*(stored: StoredReader): Reader =
   result.node = result.path.dataRoot
   result.pow = result.node.pow
   result.idx = 0
-  result.mode = if result.pow >= 3: RmNODE else: RmPOS
+  result.mode = if result.pow >= 3'u64: RmNODE else: RmPOS
 
   # No moves? Ok, then.
   if stored.moves.len == 0:
@@ -117,10 +121,16 @@ proc retrieve*(stored: StoredReader): Reader =
       # Completely ignore the first move possibly with room to spare
       powdiff -= nBitsInFirstMove
       nBitsInFirstMove = 64
-      move = moves.pop()
-    while powdiff >= 64:
+      if moves.len > 0:
+        move = moves.pop()
+      else:
+        return result
+    while powdiff >= 64'u64:
       powdiff -= 64
-      move = moves.pop()
+      if moves.len > 0:
+        move = moves.pop()
+      else:
+        return result
     # Powdiff is now in the range 0..63
     move = move shr powdiff
     nBitsInFirstMove -= powdiff
@@ -130,7 +140,7 @@ proc retrieve*(stored: StoredReader): Reader =
     halveReader(result)
   # Now the reader is at the rootPow, or the correct amount of moves has been ignored.
   # Either way, we are now ready to consume the moves.
-  while nBitsInFirstMove > 0:
+  while nBitsInFirstMove > 0'u64:
     if (move and 1'u64) == 0:
       halveReader(result)
     else:
@@ -145,26 +155,29 @@ proc retrieve*(stored: StoredReader): Reader =
       else:
         hlvrtReader(result)
       move = move shr 1
+  # Strange things may have happened. Set mode again
+  if result.pow < 3'u64:
+    result.mode = RmPOS
 
 proc descendPath*(reader: var Reader) {.inline.} =
   ## Select full child path
   let child = reader.path.child
-  if child != nil:
+  if child != nil and child.dataRoot != nil:
     reader.node = child.dataRoot
     reader.path = child
-    reader.mode = if reader.node.pow >= 3: RmNODE else: RmPOS
+    reader.mode = if reader.node.pow >= 3'u64: RmNODE else: RmPOS
     reader.pow = reader.node.pow
     reader.idx = 0
 
 proc ascendPath*(reader: var Reader) {.inline.} =
   let owner = reader.path.owner
-  if owner != nil:
+  if owner != nil and owner.dataRoot != nil:
     reader.node = owner.dataRoot
     reader.path = owner
-    reader.mode = if reader.node.pow >= 3: RmNODE else: RmPOS
+    reader.mode = if reader.node.pow >= 3'u64: RmNODE else: RmPOS
     reader.pow = reader.node.pow
     reader.idx = 0
-    while reader.pow > 0:
+    while reader.pow > 0'u64:
       halveReader(reader)
 
 proc getHex*(reader: Reader): uint8 {.inline.} =
@@ -185,6 +198,68 @@ proc getByte*(reader: Reader): uint8 {.inline.} =
     of Dnk8: return node.val
     of DnkMIX: Unreachable("getHex: DnkMIX cannot be pow3")
 
+proc justReplaceCurrentNode*(reader: var Reader, newNode: DaoNode, setReaderNode: static bool) =
+  ## Just replace the current node. Won't replace pow or idx or mode.
+  ## If setReaderNode set to true, also replaces the reader node with the newNode.
+  let oldNode = reader.node
+  if oldNode == reader.path.dataRoot:
+    # Assign new node to path root if need be
+    reader.path.dataRoot = newNode
+  else:
+    # If we weren't root
+    # Need to set our parent
+    if oldNode.parent == nil:
+      Unreachable("REPLACE: Non-root node with nil parent")
+    assert oldnode.parent.kind == DnkMIX, "REPLACE: Somehow you had nonmix parent"
+    newNode.parent = oldNode.parent
+    if oldNode == oldNode.parent.lc:
+      oldNode.parent.lc = newNode
+    elif oldNode == oldNode.parent.rc:
+      oldNode.parent.rc = newNode
+    else:
+      Unreachable("REPLACE: Hanging node!")
+  when setReaderNode:
+    reader.node = newNode
+
+proc leftmostBit*(reader: Reader): uint8 {.inline.} =
+  var lc = reader.node
+  while lc.kind == DnkMIX:
+    lc = lc.lc
+  # Not polar if left child is DnkNEG
+  if lc.kind == DnkNEG:
+    return 0'u8
+  # Early exits on Dnk8 if lc leftmost bit is zero
+  if lc.kind == Dnk8:
+    if lc.pow > 3'u64:
+      Unreachable("LEFTMOSTBIT: Impossible lc pow")
+    else:
+      let pow: range[0..3] = reader.pow
+      case pow:
+      of 3: return lc.val shr 7
+      of 2: return (lc.val shr (7 - (reader.idx shl 2))) and 1'u8
+      of 1: return (lc.val shr (7 - (reader.idx shl 1))) and 1'u8
+      of 0: return (lc.val shr (7 - reader.idx)) and 1'u8
+  # DnkPOS
+  return 1'u8
+
+proc rightmostBit*(reader: Reader): uint8 {.inline.} =
+  var rc = reader.node
+  while rc.kind == DnkMIX:
+    rc = rc.rc
+  if rc.kind == DnkPOS:
+    return 1'u8
+  if rc.kind == Dnk8:
+    if rc.pow > 3'u64:
+      Unreachable("LEFTMOSTBIT: Impossible rc pow")
+    else:
+      let pow: range[0..3] = reader.pow
+      case pow:
+      of 3: return rc.val and 1'u8
+      of 2: return (rc.val shr (4 - (reader.idx shl 2))) and 1'u8
+      of 1: return (rc.val shr (6 - (reader.idx shl 1))) and 1'u8
+      of 0: return (rc.val shr (7 - reader.idx)) and 1'u8
+  return 0'u8
+
 proc swapsReader*(reader: var Reader) {.inline.} =
   let node = reader.node
   case node.kind:
@@ -193,12 +268,12 @@ proc swapsReader*(reader: var Reader) {.inline.} =
       if reader.pow == 3: # RmNODE
         node.val = (node.val shl 4 and 0xF0'u8) or (node.val shr 4)
       elif reader.pow == 2: # RmPOS
-        let bitsFromRight = 4 * (1 - reader.idx)
+        let bitsFromRight = (1 - reader.idx.int) shl 2
         let writeMask = 0b1111'u8 shl bitsFromRight
         let shifted = (node.val shl 2 and 0b11001100'u8) or (node.val shr 2 and 0b00110011'u8)
         node.val = (node.val and not writeMask) or (shifted and writeMask)
       elif reader.pow == 1: # RmPOS
-        let bitsFromRight = 2 * (3 - reader.idx)
+        let bitsFromRight = (3 - reader.idx.int) shl 1
         let writeMask = 0b11'u8 shl bitsFromRight
         let shifted = (node.val shl 1 and 0b10101010'u8) or (node.val shr 1 and 0b01010101'u8)
         node.val = (node.val and not writeMask) or (shifted and writeMask)
@@ -231,6 +306,8 @@ proc halveReader*(reader: var Reader) {.inline.} =
     else:
       dec reader.pow
       reader.idx = reader.idx shl 1
+      if node.pow - reader.pow >= 64:
+        Todo("HALVE: Descending will make the reader idx overflow. But you probably don't want 2.25 Exabytes anyway.")
 
 proc hlvrtReader*(reader: var Reader) {.inline.} =
   ## Go to right child
@@ -286,7 +363,7 @@ proc mergeReader*(reader: var Reader, allow_ascent: static bool = true): bool {.
       else:
         reader.pow += 1
         reader.idx = reader.idx div 2
-        if reader.pow > 2 and reader.pow == reader.node.pow:
+        if reader.pow > 2'u64 and reader.pow == reader.node.pow:
           reader.mode = RmNODE
         return true
 
@@ -326,7 +403,7 @@ proc linesReader*(reader: var Reader): bool {.inline.} =
   else:
     # We are certainly inside of DnkPOS or DnkNEG.
     let pdiff = reader.node.pow - reader.pow
-    if pdiff >= 64:
+    if pdiff >= 64'u64:
       Todo("moveThenGet: Index might overflow uint64")
     # If we can move right, just move and get the value.
     if (((reader.idx + 1) shr pdiff) and 1'u64) == 0:
@@ -363,7 +440,7 @@ proc readsReader*(reader: var Reader) {.inline.} =
       of DnkMIX:
         # Copy reader for linear traversal and move to pow 3
         var readHead = reader
-        while readHead.pow > 3: halveReader(readHead)
+        while readHead.pow > 3'u64: halveReader(readHead)
         stdout.write readHead.getByte().char
         while linesReader(readHead): stdout.write readHead.getByte().char
       of DnkNEG, DnkPOS:
@@ -385,52 +462,32 @@ proc readsReader*(reader: var Reader) {.inline.} =
         for _ in reader.idx ..< (1'u64 shl (reader.pow - 3)):
           stdout.write val
       of Dnk8:
-        if reader.pow == 0:   stdout.write "01"[node.val shr (8 - reader.idx) and 1'u8]
-        elif reader.pow == 1: stdout.write (node.val shr (4 - reader.idx) and 0b11'u8).toBin2
-        elif reader.pow == 2: stdout.write (node.val shr (2 - reader.idx) and 0xF'u8).toBin4
+        if reader.pow == 0:   stdout.write "01"[node.val shr (8'u64 - reader.idx) and 1'u8]
+        elif reader.pow == 1: stdout.write (node.val shr (4'u64 - reader.idx) and 0b11'u8).toBin2
+        elif reader.pow == 2: stdout.write (node.val shr (2'u64 - reader.idx) and 0xF'u8).toBin4
         else: Unreachable("READS: Impossible reader pow.")
 
 proc inputReader*(reader: var Reader, inputStream: File) {.inline.} =
-  let node = reader.node
-  if reader.pow > 3:
+  if reader.pow > 3'u64:
     # More than one byte
     var charbuf = newSeq[uint8](1 shl (reader.pow - 3))
     discard inputStream.readBytes(charbuf, 0, charbuf.len)
     let inputTree = treeify(charbuf)
     # '\' 92 '\r' 13 '\n' 10
-    # What a terrible night to have a curse
-
+    # What a terrible night to have a curse... input via human command line input always contaminated with endline
     case reader.mode:
-    of RmNODE:
-      # Snip snip, replace this node
-      if reader.node == reader.path.dataRoot:
-        # If we were root, assign to path root first
-        reader.path.dataRoot = inputTree.root
-      else:
-        # If we weren't root
-        let parent = reader.node.parent
-        if parent == nil:
-          Unreachable("INPUT: Non-root had nil parent")
-        # Hook up parent and child
-        inputTree.root.parent = parent
-        if reader.node == parent.lc:
-          parent.lc = inputTree.root
-        elif reader.node == parent.rc:
-          parent.rc = inputTree.root
-        else:
-          Unreachable("INPUT: Node with hanging parent")
-      # Assign to node
-      reader.node = inputTree.root
-    of RmPOS:
-      case reader.node.kind:
-      of DnkPOS:
-        Todo("Heterogenize DnkPOS Interior")
-      of DnkNEG:
-        Todo("Heterogenize DnkNEG Interior")
-      of Dnk8:
-        Unreachable("INPUT: POS mode Dnk8 despite having checked pow > 3")
-      of DnkMIX:
-        Unreachable("INPUT: POS mode inside DnkMIX")
+      of RmNODE:
+        reader.justReplaceCurrentNode(inputTree.root, setReaderNode=true)
+      of RmPOS:
+        case reader.node.kind:
+        of DnkPOS:
+          Todo("Heterogenize DnkPOS Interior")
+        of DnkNEG:
+          Todo("Heterogenize DnkNEG Interior")
+        of Dnk8:
+          Unreachable("INPUT: POS mode Dnk8 despite having checked pow > 3")
+        of DnkMIX:
+          Unreachable("INPUT: POS mode inside DnkMIX")
   else:
     # One byte or less
     let val = inputStream.readChar().uint8
@@ -448,44 +505,123 @@ proc splitReader*(reader: var Reader) {.inline.} =
   of RmNODE:
     case node.kind:
     of DnkMIX:
-      if node.pow > 4:
+      if node.pow > 4'u64:
         if node.lc.kind != DnkPOS: node.lc = DaoNode(kind: DnkPOS, parent: node, pow: node.pow - 1)
         if node.rc.kind != DnkNEG: node.rc = DaoNode(kind: DnkNEG, parent: node, pow: node.pow - 1)
-      elif node.pow == 4:
+      elif node.pow == 4'u64:
         if node.lc.kind != DnkPOS: node.lc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0xFF'u8)
         if node.rc.kind != DnkNEG: node.rc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0x00'u8)
       else: Unreachable("SPLIT: Illegal DnkMIX of pow <= 3")
     of DnkNEG, DnkPOS:
       # Overwrite the node
       let newNode = DaoNode(kind: DnkMIX, parent: node.parent, pow: node.pow, lc: nil, rc: nil)
-      if node.pow > 4:
+      if node.pow > 4'u64:
         newNode.lc = DaoNode(kind: DnkPOS, parent: newNode, pow: node.pow - 1)
         newNode.rc = DaoNode(kind: DnkNEG, parent: newNode, pow: node.pow - 1)
-      elif node.pow == 4:
-        newNode.lc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0xFF'u8)
-        newNode.rc = DaoNode(kind: Dnk8, parent: node, pow: 3, val: 0x00'u8)
+      elif node.pow == 4'u64:
+        newNode.lc = DaoNode(kind: Dnk8, parent: newNode, pow: 3, val: 0xFF'u8)
+        newNode.rc = DaoNode(kind: Dnk8, parent: newNode, pow: 3, val: 0x00'u8)
       else: Unreachable("SPLIT: Illegal DnkMIX of pow <= 3")
-      reader.node = newNode
+      reader.justReplaceCurrentNode(newNode, setReaderNode=true)
     of Dnk8:
       node.val = 0xF0'u8
   of RmPOS:
     case node.kind:
       of Dnk8:
         if reader.pow == 2:
-          node.val = node.val and (0x0F'u8 shl (4 * reader.idx))
-          node.val = node.val or (0b1100'u8 shl (4 * (1 - reader.idx)))
+          node.val = node.val and (0x0F'u8 shl (reader.idx shl 2))
+          node.val = node.val or (0b1100'u8 shl ((1'u64 - reader.idx) shl 2))
         elif reader.pow == 1:
-          let bitsFromRight = 2 * (3 - reader.idx)
+          let bitsFromRight = (3'u64 - reader.idx) shl 1
           node.val = node.val and not (0b11'u8 shl bitsFromRight)
           node.val = node.val or (0b10'u8 shl bitsFromRight)
         elif reader.pow == 0:
           discard # Splitting a bit is a noop
         else:
           Unreachable("SPLIT: Impossible Reader pow.")
-      of DnkNEG:
-        Todo("Heterogenize DnkNEG Interior")
-      of DnkPOS:
-        Todo("Heterogenize DnkPOS Interior")
+      of DnkNEG, DnkPOS:
+        var curr: DaoNode
+        var idx: uint64
+        var sub3Idx: uint64
+        var defaultValue = if node.kind == DnkPOS: 0xFF'u8 else: 0x00'u8
+        if reader.pow > 2:
+          if reader.pow > 3:
+            # If greater than 3, we have to make the parent node and the children too
+            var lc, rc: DaoNode
+            curr = DaoNode(kind: DnkMIX, parent: nil, pow: reader.pow, lc: nil, rc: nil)
+            if reader.pow > 4:
+              lc = DaoNode(kind: DnkPOS, parent: curr, pow: reader.pow - 1)
+              rc = DaoNode(kind: DnkNEG, parent: curr, pow: reader.pow - 1)
+            else: # reader.pow == 4
+              lc = DaoNode(kind: Dnk8, parent: curr, pow: 3, val: 0xFF'u8)
+              rc = DaoNode(kind: Dnk8, parent: curr, pow: 3, val: 0x00'u8)
+            curr.lc = lc
+            curr.rc = rc
+          else: # reader.pow == 3
+            # Otherwise there's a single split child
+            curr = DaoNode(kind: Dnk8, parent: curr, pow: 3, val: 0xF0'u8)
+          # The node "curr" goes at the current idx
+          idx = reader.idx
+        elif reader.pow == 2:
+          # Need to know idx too. We know reader.node.pow > 3.
+          # Ok to make curr pow 3 as long as we adjust virtual idx accordingly.
+          # Are we the left child or right child of pow 3 layer?
+          let is_rc = (reader.idx and 1'u64) > 0'u64
+          let val = if node.kind == DnkNEG:
+            if is_rc: 0b00001100'u8 else: 0b11000000'u8
+          else:
+            if is_rc: 0b11111100'u8 else: 0b11001111'u8
+          curr = DaoNode(kind: Dnk8, parent: nil, pow: 3, val: val)
+          idx = reader.idx shr 1
+          sub3Idx = reader.idx and 0b1'u64
+        elif reader.pow == 1:
+          # Last two bits tell us about the branching from the pow 3 layer
+          let bitsFromRight = (3 - (reader.idx and 0b11'u64)) shl 1
+          let bitmask = 0b11'u8 shl bitsFromRight
+          var val: uint8
+          if node.kind == DnkNEG:
+            val = 0x00'u8 or (0b10'u8 shl bitsFromRight)
+          else: # DnkPOS
+            val = not (0x00'u8 or (0b01'u8 shl bitsFromRight))
+          curr = DaoNode(kind: Dnk8, parent: nil, pow: 3, val: val)
+          idx = reader.idx shr 2
+          sub3Idx = reader.idx and 0b11'u64
+        elif reader.pow == 0:
+          return # nothing happens
+
+        var climber = curr
+        # Reuse logic from retrieve to descend from the reader.node
+        while climber.pow < node.pow:
+          # Create a parent and a sibling
+          let is_rc = (idx and 1'u64) > 0'u64
+          var parent = DaoNode(kind: DnkMIX, parent: nil, pow: climber.pow + 1)
+          climber.parent = parent
+
+          let sibling =
+            if climber.pow > 3: DaoNode(kind: node.kind, parent: parent, pow: climber.pow)
+            else:               DaoNode(kind: Dnk8, parent: parent, pow: climber.pow, val: defaultValue)
+
+          if is_rc:
+            parent.rc = climber
+            parent.lc = sibling
+          else: # is lc
+            parent.rc = sibling
+            parent.lc = climber
+
+          climber = parent
+          idx = idx shr 1
+
+        # Now connect climber to where the reader was
+        reader.justReplaceCurrentNode(climber, setReaderNode=false)
+        # Then set the reader to curr (or within curr)
+        # Pow unchanged
+        reader.node = curr
+        if reader.pow >= 3:
+          reader.mode = RmNODE
+          reader.idx = 0
+        else: # Sub3
+          reader.idx = sub3Idx
+
       of DnkMIX:
         Unreachable("SPLIT: POS mode inside DnkMIX")
 
@@ -512,7 +648,7 @@ proc doalcReader*(reader: var Reader) {.inline.} =
   if parent.kind != Dnk8:
     if parent.kind == DnkMIX:
       parent.rc.parent = parent
-    root.parent = parent
+      root.parent = parent
     reader.path.dataRoot = parent
   discard mergeReader(reader)
 
@@ -525,11 +661,11 @@ proc dealcReader*(reader: var Reader) {.inline.} =
       reader.path.dataRoot.parent = nil
     of DnkPOS, DnkNEG:
       root.pow -= 1
-      if root.pow == 3:
+      if root.pow == 3'u64:
         let val = if root.kind == DnkPOS: 0xFF'u8 else: 0'u8
         reader.path.dataRoot = DaoNode(kind: Dnk8, pow: 3, parent: nil, val: val)
     of Dnk8:
-      if root.pow > 0:
+      if root.pow > 0'u64:
         root.pow -= 1
         root.val = root.val shr (1 shl root.pow)
       else:
