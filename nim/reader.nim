@@ -21,7 +21,6 @@
 
 import dao_base
 import dao_errors
-import daox
 
 const lookup4 = [
   "0000", "0001", "0010", "0011",
@@ -221,6 +220,35 @@ proc justReplaceCurrentNode*(reader: var Reader, newNode: DaoNode, setReaderNode
   when setReaderNode:
     reader.node = newNode
 
+proc climbTo(curr, target: DaoNode; idx: uint64): DaoNode = 
+  ## For writing to the interior of pure nodes.
+  ## From curr, make nodes that go up until target is reached.
+  result = curr
+  var idx = idx
+  let kind = target.kind
+  let defaultValue = if kind == DnkPOS: 0xFF'u8 else: 0x00'u8
+  # Reuse logic from retrieve to descend from the target node
+  while result.pow < target.pow:
+    # Create a parent and a sibling
+    let is_rc = (idx and 1'u64) > 0'u64
+    var parent = DaoNode(kind: DnkMIX, parent: nil, pow: result.pow + 1)
+    result.parent = parent
+
+    let sibling =
+      if result.pow > 3: DaoNode(kind: kind, parent: parent, pow: result.pow)
+      else:              DaoNode(kind: Dnk8, parent: parent, pow: result.pow, val: defaultValue)
+
+    if is_rc:
+      parent.rc = result
+      parent.lc = sibling
+    else: # is lc
+      parent.rc = sibling
+      parent.lc = result
+
+    result = parent
+    idx = idx shr 1
+
+
 proc leftmostBit*(reader: Reader): uint8 {.inline.} =
   var lc = reader.node
   while lc.kind == DnkMIX:
@@ -233,12 +261,12 @@ proc leftmostBit*(reader: Reader): uint8 {.inline.} =
     if lc.pow > 3'u64:
       Unreachable("LEFTMOSTBIT: Impossible lc pow")
     else:
-      let pow: range[0..3] = reader.pow
-      case pow:
-      of 3: return lc.val shr 7
-      of 2: return (lc.val shr (7 - (reader.idx shl 2))) and 1'u8
-      of 1: return (lc.val shr (7 - (reader.idx shl 1))) and 1'u8
-      of 0: return (lc.val shr (7 - reader.idx)) and 1'u8
+      let pow: range[0..3] = (if reader.pow > 3'u64: 3 else: reader.pow.int)
+      return case pow:
+        of 3:           lc.val shr  7
+        of 2: 1'u8 and (lc.val shr (7 - (reader.idx shl 2)))
+        of 1: 1'u8 and (lc.val shr (7 - (reader.idx shl 1)))
+        of 0: 1'u8 and (lc.val shr (7 -  reader.idx       ))
   # DnkPOS
   return 1'u8
 
@@ -252,15 +280,15 @@ proc rightmostBit*(reader: Reader): uint8 {.inline.} =
     if rc.pow > 3'u64:
       Unreachable("LEFTMOSTBIT: Impossible rc pow")
     else:
-      let pow: range[0..3] = reader.pow
-      case pow:
-      of 3: return rc.val and 1'u8
-      of 2: return (rc.val shr (4 - (reader.idx shl 2))) and 1'u8
-      of 1: return (rc.val shr (6 - (reader.idx shl 1))) and 1'u8
-      of 0: return (rc.val shr (7 - reader.idx)) and 1'u8
+      let pow: range[0..3] = (if reader.pow > 3'u64: 3 else: reader.pow.int)
+      return case pow:
+        of 3: 1'u8 and  rc.val
+        of 2: 1'u8 and (rc.val shr (4 - (reader.idx shl 2)))
+        of 1: 1'u8 and (rc.val shr (6 - (reader.idx shl 1)))
+        of 0: 1'u8 and (rc.val shr (7 -  reader.idx       ))
   return 0'u8
 
-proc swapsReader*(reader: var Reader) {.inline.} =
+proc swapsReader*(reader: Reader) {.inline.} =
   let node = reader.node
   case node.kind:
     of DnkMIX: swap(node.lc, node.rc)
@@ -471,7 +499,12 @@ proc inputReader*(reader: var Reader, inputStream: File) {.inline.} =
   if reader.pow > 3'u64:
     # More than one byte
     var charbuf = newSeq[uint8](1 shl (reader.pow - 3))
-    discard inputStream.readBytes(charbuf, 0, charbuf.len)
+    try:
+      discard inputStream.readBytes(charbuf, 0, charbuf.len)
+    except EOFError:
+      # EOF -> Read EOFs (-1)
+      for ch in charbuf.mitems:
+        ch = 0xFF'u8
     let inputTree = treeify(charbuf)
     # '\' 92 '\r' 13 '\n' 10
     # What a terrible night to have a curse... input via human command line input always contaminated with endline
@@ -480,24 +513,67 @@ proc inputReader*(reader: var Reader, inputStream: File) {.inline.} =
         reader.justReplaceCurrentNode(inputTree.root, setReaderNode=true)
       of RmPOS:
         case reader.node.kind:
-        of DnkPOS:
-          Todo("Heterogenize DnkPOS Interior")
-        of DnkNEG:
-          Todo("Heterogenize DnkNEG Interior")
+        of DnkPOS, DnkNEG:
+          # Write the new subtree in the interior of the pure node
+          let replacement = inputTree.root.climbTo(reader.node, reader.idx)
+          # Now connect replacement to where the reader was
+          # Pow unchanged
+          reader.justReplaceCurrentNode(replacement, setReaderNode=false)
+          reader.node = inputTree.root
+          reader.mode = RmNODE
+          reader.idx = 0
         of Dnk8:
           Unreachable("INPUT: POS mode Dnk8 despite having checked pow > 3")
         of DnkMIX:
           Unreachable("INPUT: POS mode inside DnkMIX")
   else:
     # One byte or less
-    let val = inputStream.readChar().uint8
-    if reader.node.kind != Dnk8:
-      Unreachable("INPUT: Under pow 3 but node wasn't Dnk8")
-    if reader.pow == 3:      reader.node.val = val
-    elif reader.pow == 2:    reader.node.val = val and 0x0F'u8
-    elif reader.pow == 1:    reader.node.val = val and 0x03'u8
-    elif reader.pow == 0:    reader.node.val = val and 0x01'u8
-    else: Unreachable("INPUT: Impossible Dnk8 pow: " & $(reader.pow))
+    let ival =
+      try:
+        inputStream.readChar().uint8
+      except EOFError:
+        0xFF'u8 # EOF (-1)
+
+    case reader.node.kind:
+    of Dnk8:
+      reader.node.val =
+        if reader.pow == 3:      iVal
+        elif reader.pow == 2:    iVal and 0x0F'u8
+        elif reader.pow == 1:    iVal and 0x03'u8
+        elif reader.pow == 0:    iVal and 0x01'u8
+        else: Unreachable("INPUT: Impossible Dnk8 pow: " & $(reader.pow))
+    of DnkPOS, DnkNEG:
+      var curr: DaoNode
+      var idx, sub3Idx: uint64
+      if reader.pow > 3:
+        Unreachable("INPUT: Reader.pow > 3 though we just checked the converse.")
+      elif reader.pow == 3:
+        curr = DaoNode(kind: Dnk8, parent: curr, pow: 3, val: iVal)
+        # Preemptive setting
+        reader.mode = RmNODE
+        reader.idx = 0
+      else:
+        # Need to know idx too. We know reader.node.pow > 3.
+        # Ok to make curr pow 3 as long as we adjust virtual idx accordingly.
+        let writeValue = iVal and (1'u8 shl (1 shl reader.pow.int) - 1'u8)
+        let pdiff = 3 - reader.pow.int
+        let idxMask = (1'u64 shl pdiff) - 1'u64 # Grabs the relevant part of the index
+        sub3Idx = reader.idx and idxMask
+        let bitsFromRight = (idxMask - sub3Idx) shl reader.pow
+
+        let val =
+          if reader.node.kind == DnkNEG:     writeValue  shl bitsFromRight
+          else:                    not ((not writeValue) shl bitsFromRight)
+        curr = DaoNode(kind: Dnk8, parent: nil, pow: 3, val: val)
+        idx = reader.idx shr pdiff
+        # Preemptive setting
+        reader.idx = sub3Idx
+
+      let climber = curr.climbTo(reader.node, idx)
+      reader.justReplaceCurrentNode(climber, setReaderNode=false)
+      reader.node = curr
+    of DnkMIX:
+      Unreachable("INPUT: Under pow 3 in DnkMIX")
 
 proc splitReader*(reader: var Reader) {.inline.} =
   let node = reader.node
@@ -543,7 +619,6 @@ proc splitReader*(reader: var Reader) {.inline.} =
         var curr: DaoNode
         var idx: uint64
         var sub3Idx: uint64
-        var defaultValue = if node.kind == DnkPOS: 0xFF'u8 else: 0x00'u8
         if reader.pow > 2:
           if reader.pow > 3:
             # If greater than 3, we have to make the parent node and the children too
@@ -577,39 +652,16 @@ proc splitReader*(reader: var Reader) {.inline.} =
         elif reader.pow == 1:
           # Last two bits tell us about the branching from the pow 3 layer
           let bitsFromRight = (3 - (reader.idx and 0b11'u64)) shl 1
-          let bitmask = 0b11'u8 shl bitsFromRight
-          var val: uint8
-          if node.kind == DnkNEG:
-            val = 0x00'u8 or (0b10'u8 shl bitsFromRight)
-          else: # DnkPOS
-            val = not (0x00'u8 or (0b01'u8 shl bitsFromRight))
+          let val =
+            if node.kind == DnkNEG:     (0b10'u8 shl bitsFromRight)
+            else:                   not (0b01'u8 shl bitsFromRight)
           curr = DaoNode(kind: Dnk8, parent: nil, pow: 3, val: val)
           idx = reader.idx shr 2
           sub3Idx = reader.idx and 0b11'u64
         elif reader.pow == 0:
           return # nothing happens
 
-        var climber = curr
-        # Reuse logic from retrieve to descend from the reader.node
-        while climber.pow < node.pow:
-          # Create a parent and a sibling
-          let is_rc = (idx and 1'u64) > 0'u64
-          var parent = DaoNode(kind: DnkMIX, parent: nil, pow: climber.pow + 1)
-          climber.parent = parent
-
-          let sibling =
-            if climber.pow > 3: DaoNode(kind: node.kind, parent: parent, pow: climber.pow)
-            else:               DaoNode(kind: Dnk8, parent: parent, pow: climber.pow, val: defaultValue)
-
-          if is_rc:
-            parent.rc = climber
-            parent.lc = sibling
-          else: # is lc
-            parent.rc = sibling
-            parent.lc = climber
-
-          climber = parent
-          idx = idx shr 1
+        let climber = curr.climbTo(node, idx)
 
         # Now connect climber to where the reader was
         reader.justReplaceCurrentNode(climber, setReaderNode=false)

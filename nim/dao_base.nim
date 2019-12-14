@@ -3,8 +3,6 @@ import dao_errors
 
 const
   DEBUG = true
-  FILE_SYMBOLIC = ".dao"
-  FILE_COMPILED = ".wuwei"
 
 type
   DaoNodeKind* = enum

@@ -3,31 +3,51 @@
 @ Init
 $$$>;:
 
+@ We'll filter out non-EOF states by letting them call UPLEV.
+@ EOF is (b1111 b1111)
+
+@ If equal, run the polar therefore skipping the uplev
 @ 0xxxxxx0 0xxxxxx1 1xxxxxx0 1xxxxxx1
 =*<
-@ 0xxxxxx0 					 1xxxxxx1
-$*=S*=<S
-@ 1bcdefg1
+
+@ States remaining
+@ 0xxxxxx0 1xxxxxx1
+$      @ 0xxxxxx0 0   1xxxxxx1 0
+*=S    @ 0xxxxxx0     1xxxxxx1 0 If not polar, dealc
+*=<    @              1xxxxxx1 0 If not polar, uplev
+S
+
+@ 1......1
 ((!))
+
 @ B1CDEFG1
 @ 11CDEFG1 01CDEFG1
 =*<
+
 @ 11CDEFG1
 (!)
+
 @ CD11EFG1
 @ 1D11EFG1 0D11EFG1
 =*<
+
 @ 1D11EFG1
 ((!))
+
 @ D111EFG1
 @ 1111EFG1 0111EFG1
 =*<
+
 @ 1111EFG1
 !
+
 @ EFG11111
 =*<
+
 @ 1FG11111
 ((!))=*<
+
 @ 11G11111
 (!)=*<
-@ 11111111
+
+@ 11111111 is eof, typically.
