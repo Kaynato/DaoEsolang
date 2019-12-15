@@ -22,13 +22,13 @@
 
 import os
 import parseopt
-
 import strutils
 import strformat
 
 import dao_base
 import dao_errors
-import reader
+import dao_reader
+import dao_impl
 
 const
   OP_NAMES = [
@@ -37,8 +37,7 @@ const
     "HALVE", "UPLEV", "READS", "DEALC",
     "SPLIT", "POLAR", "DOALC", "INPUT"
   ]
-
-  OP_SYM = ".!/)%#>=(<:S[*$;"
+  
   FILE_SYMBOLIC = ".dao"
   FILE_COMPILED = ".wuwei"
 
@@ -71,182 +70,7 @@ const
 		              Version 0.6.0
 """
 
-
-## Utility
-proc store*(e: Executor): StoredExecutor =
-  result.oplevel = e.oplevel
-  result.data = e.data.store
-  result.exec = e.exec.store
-  result.execStart = e.execStart.store
-
-proc retrieve*(se: StoredExecutor): Executor =
-  result.oplevel = se.oplevel
-  result.data = se.data.retrieve
-  result.exec = se.exec.retrieve
-  result.execStart = se.execStart.retrieve
-  result.wasMoved = false
-
-template withSafeModify(e: var Executor, body: untyped): untyped =
-  var sreader: StoredReaderRef = nil
-
-  if e.data.path == e.exec.path:
-    sreader.new
-    sreader[] = e.exec.store
-
-  body
-
-  if sreader != nil:
-    e.exec = sreader[].retrieve
-
-proc initPath(parent: Path = nil, dataRoot: DaoNode = nil): Path =
-  ## Initialize a new path from a parent, or if parentless, the TLP.
-  result.new
-  result.owner = parent
-  result.child = nil
-  if parent != nil:
-    result.depth = parent.depth + 1
-    parent.child = result
-  else:
-    result.depth = 0
-  if dataRoot == nil: result.dataRoot = DaoNode(kind: Dnk8, parent: nil, pow: 0, val: 0'u8)
-  else:               result.dataRoot = dataRoot
-
 ## Operation implementation
-
-proc swaps(EXEC: var Executor) =
-  if EXEC.oplevel > 0'u8: return
-  withSafeModify(EXEC):
-    swapsReader(EXEC.data)
-
-proc later(EXEC: var Executor) =
-  if EXEC.oplevel < 4'u8:
-    ## Ordinary LATER
-    discard laterReader(EXEC.data)
-  else:
-    # TODO potentially undefined behavior when lines at end
-    discard linesReader(EXEC.data)
-
-proc merge(EXEC: var Executor) =
-  if EXEC.oplevel > 6'u8: return
-  ## Ascend EXEC.data
-  discard mergeReader(EXEC.data)
-
-proc sifts(EXEC: var Executor) =
-  Todo("Implement SIFTS")
-
-proc execs(EXEC: var Executor, STACK: var seq[StoredExecutor]) =
-  if EXEC.oplevel > 7'u8: return
-
-  # Exit if the exec reader would be crushed
-  if EXEC.data.path.dataRoot.pow < 2'u64: return
-
-  # Copy the reader and navigate to the leftmost pow3 position in selection
-  var reader = EXEC.data
-
-  case reader.mode:
-  of RmPOS:
-    while reader.pow < 2'u64:
-      discard mergeReader(reader)
-    if reader.pow == reader.node.pow:
-      reader.mode = RmNODE
-  of RmNODE:
-    if reader.node.pow > 2'u64:
-      while reader.node.pow > 2'u64:
-        halveReader(reader)
-    elif reader.pow == 2'u64:
-      discard
-    else:
-      Unreachable("EXECS: Reader pow was < 2 despite being RmNODE")
-
-  # Store the old reader
-  STACK.add(EXEC.store)
-
-  # If child of target path is nil, create a new child
-  let child = if EXEC.data.path.child == nil:
-    initPath(parent = EXEC.data.path)
-  else:
-    EXEC.data.path.child
-
-  # Create a new executor, cloning the current reader for its position
-  let mode = if child.dataRoot.pow >= 3: RmNODE else: RmPOS
-  let dataReader = Reader(path: child, node: child.dataRoot, mode: mode, pow: child.dataRoot.pow, idx: 0)
-  var newExec = Executor(oplevel: 0, execStart: reader, exec: reader, data: dataReader, wasMoved: true)
-
-  # Swap out the executor
-  EXEC = newExec
-
-proc delev(EXEC: var Executor) =
-  if EXEC.oplevel > 0'u8:
-    dec EXEC.oplevel
-
-proc equal(EXEC: var Executor, debug: int = 0) =
-  if EXEC.oplevel > 5'u8: return
-  ## Execute next cmd only if equal, else skip
-  # Nop if equal
-  if leftmostBit(EXEC.data) == rightmostBit(EXEC.data): return
-  # Else, skip
-  discard linesReader(EXEC.exec)
-  if debug > 0: echo fmt" = skip {OP_SYM[EXEC.exec.getHex()]} :"
-
-proc halve(EXEC: var Executor) =
-  ## Descend into node left half.
-  if EXEC.oplevel > 6'u8: return
-  halveReader(EXEC.data)
-
-proc uplev(EXEC: var Executor) =
-  if EXEC.oplevel > 8'u8: return
-  EXEC.oplevel += 1
-  # This copies, right? Right. Pretty sure.
-  EXEC.exec = EXEC.execStart
-  EXEC.wasMoved = true
-
-proc reads(EXEC: var Executor) =
-  if EXEC.oplevel > 5'u8: return
-  readsReader(EXEC.data)
-
-proc dealc(EXEC: var Executor) =
-  if EXEC.oplevel > 2'u8: return
-  
-  let oldpow = EXEC.data.pow
-  withSafeModify(EXEC):
-    dealcReader(EXEC.data)
-
-  let newpow = EXEC.data.pow
-  if newpow == oldpow - 1:
-    discard # Implicitly halved already
-  elif newpow == oldpow:
-    halveReader(EXEC.data) # Have to explicitly halve
-  else:
-    Unreachable("DEALC: Data pow changed beyond implicit halving.")
-
-proc split(EXEC: var Executor) =
-  if EXEC.oplevel > 6'u8: return
-  if EXEC.oplevel == 0'u8:
-    withSafeModify(EXEC):
-      splitReader(EXEC.data)
-  halveReader(EXEC.data)
-
-proc polar(EXEC: var Executor, debug: int = 0) =
-  if EXEC.oplevel > 3'u8: return
-  ## Execute next cmd only if polar, else skip
-  # Nop if polar
-  if leftmostBit(EXEC.data) > rightmostBit(EXEC.data): return
-  # Else, skip
-  discard linesReader(EXEC.exec)
-  if debug > 0: echo fmt" * skip {OP_SYM[EXEC.exec.getHex()]} :"
-
-proc doalc(EXEC: var Executor) =
-  if EXEC.oplevel > 0'u8: return
-  # Allocation is performed on the root of the reader's node, not the executing path.
-  # Create parent
-  withSafeModify(EXEC):
-    doalcReader(EXEC.data)
-
-proc input(EXEC: var Executor, inputStream: File) =
-  if EXEC.oplevel > 5'u8: return
-  withSafeModify(EXEC):
-    inputReader(EXEC.data, inputStream)
-
 proc symToVal(ch: char): uint8 =
   ## Convert symbols into bytes
   case ch:
@@ -274,30 +98,29 @@ proc hexToVal(ch: char): uint8 =
     of 'A'..'F': ch.uint8 - 'A'.uint8 + 0xA'u8
     else: 0xFF'u8
 
-proc initTLP(bytes: seq[uint8]): Executor =
+proc initTLP(tlpData: TLPData): Executor =
   ## Convert seq of hexes into an equivalent Path
-  let tree = treeify(bytes)
-  # Now we have made the tree for the TLP.
-  var tlp = initPath(dataRoot = tree.root)
+
+  var tlp = initPath(dataRoot = tlpData.root)
   # Special case child construction
   var child = initPath(parent = tlp)
   # Special case executor construction
   result.oplevel = 0
-  result.execStart = Reader(path: tlp, mode: RmPOS, node: tree.firstHex, pow: 2, idx: 0)
-  result.exec = Reader(path: tlp, mode: RmPOS, node: tree.firstHex, pow: 2, idx: 0)
+  result.execStart = Reader(path: tlp, mode: RmPOS, node: tlpData.firstHex, pow: 2, idx: 0)
+  result.exec = Reader(path: tlp, mode: RmPOS, node: tlpData.firstHex, pow: 2, idx: 0)
   result.data = Reader(path: child, mode: RmPOS, node: child.dataRoot, pow: 0, idx: 0)
 
 proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
   ## Run until termination
-  var STACK: seq[StoredExecutor]
-
   if debug > 0: echo fmt"Init lv {EXEC.oplevel} : data : {EXEC.data} "
   if debug > 1: echo fmt"          : path : {EXEC.data.path.dataRoot}"
 
-  var next_cmd: uint8 = EXEC.exec.getHex()
+  var STACK: ExecutorStack
+  var next_cmd: range[0'i8..16'i8] = EXEC.exec.getHex()
   while true:
 
-    while next_cmd != 0xFF:
+    while next_cmd != 16'i8:
+      {.computedGoto.}
       case next_cmd:
         of 0x0: discard
         of 0x1: swaps(EXEC)
@@ -315,9 +138,9 @@ proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
         of 0xD: polar(EXEC, debug)
         of 0xE: doalc(EXEC)
         of 0xF: input(EXEC, inputStream)
-        else: discard
+        of 0x10: discard
 
-      if debug > 0: echo fmt"op {OP_SYM[next_cmd]} lv {EXEC.oplevel} : data : {EXEC.data} "
+      if debug > 0: echo fmt"op {LOOKUP_OP_SYM[next_cmd]} lv {EXEC.oplevel} : data : {EXEC.data} "
       if debug > 1: echo fmt"          : path : {EXEC.data.path.dataRoot}"
       if EXEC.exec.pow != 2:       Unreachable("moveThenGet: Exec reader has non-2 pow")
       if EXEC.exec.mode == RmNODE: Unreachable("moveThenGet: Exec reader was pow 2 but was reading Nodes")
@@ -330,20 +153,16 @@ proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
         if debug > 0: echo "Nil exec path, break"
         break
 
-      if debug > 0:
-        var stored = EXEC.data.store
-        if EXEC.data != stored.retrieve:
-          echo "WARN: Store and retrieve CHANGED for readers!"
-          echo "Original:\n\t", EXEC.data
-          echo "Stored:\n\t", stored
-          echo "Retrieved:\n\t", stored.retrieve
-          assert false
+      if debug > 0: EXEC.data.checkReaderStores()
 
       # Determine next command
-      next_cmd = 
-        if EXEC.wasMoved: EXEC.wasMoved = false; EXEC.exec.getHex()
-        elif linesReader(EXEC.exec):             EXEC.exec.getHex()
-        else:                                    0xFF
+      if EXEC.wasMoved:
+        EXEC.wasMoved = false
+        next_cmd = EXEC.exec.getHex()
+      elif linesReader(EXEC.exec):
+        next_cmd = EXEC.exec.getHex()
+      else:
+        break
 
     if debug > 0: echo &"Exited with next_cmd {next_cmd}"
     # WARN
@@ -352,7 +171,7 @@ proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
     if STACK.len == 0:
       if debug > 0: echo "Stack length zero, terminating execution"
       return
-    EXEC = STACK.pop.retrieve
+    EXEC = STACK.retrieve
 
 proc printHelp() =
   echo "Argument syntax: [main args] [command] [command args]"
@@ -428,29 +247,36 @@ type
   DispMode = enum
     DispModeBinHex, DispModeSym
 
-proc readAllFileBytes(filename: string): seq[uint8] =
+proc readAllFileBytes(filename: string): TLPData =
   let file = open(filename, mode=FileMode.fmRead)
-  result.setLen(file.getFileSize()-1)
-  discard file.readBytes(result, 0, result.len-1)
+  let bytes = file.getFileSize()
+  var data: seq[uint8]
+  data.setLen(bytes)
+  discard file.readBytes(data, 0, bytes)
+  return data.treeify(as_hex=false)
 
-proc cleanSymFile(filename: string): seq[uint8] =
+proc cleanSymFile(filename: string): TLPData =
   ## Clean an input symbol file
+  var hexes: seq[uint8]
   for line in lines(filename):
     for c in line:
       if c == '@': break   # Line comment
       let val = c.symToVal # Add value if non-ignored value
       if val != 0xFF'u8:
-        result.add val
+        hexes.add val
+  return hexes.treeify(as_hex=true)
 
-proc cleanHexFile(filename: string): seq[uint8] =
+proc cleanHexFile(filename: string): TLPData =
   ## Clean an input literal hex file
+  var hexes: seq[uint8]
   for line in lines(filename):
     for c in line:
       case c:
         of '@': break # Line comment
-        of '0'..'9': result.add (c.uint8 - '0'.uint8) # Symbol
-        of 'A'..'F': result.add (c.uint8 - 'A'.uint8 + 0xA'u8)
+        of '0'..'9': hexes.add (c.uint8 - '0'.uint8) # Symbol
+        of 'A'..'F': hexes.add (c.uint8 - 'A'.uint8 + 0xA'u8)
         else: continue # Ignore
+  return hexes.treeify(as_hex=true)
 
 proc parseRun(parser: var OptParser, debugMode: int) =
   var targets: seq[string]
@@ -483,8 +309,11 @@ proc parseRun(parser: var OptParser, debugMode: int) =
       of cmdArgument:
         # Run the first thing we see, meow.
         targets.add parser.key
+        break
   if targets.len > 1:
     echo "More than one argument was passed in. Only one argument (the file to run) is expected."
+  elif targets.len < 1:
+    echo "No file specified."
   else:
     let target = targets[0]
 
@@ -492,7 +321,7 @@ proc parseRun(parser: var OptParser, debugMode: int) =
       echo &"Error: Could not find file {target}"
       return
 
-    let hexdata: seq[uint8] = 
+    let tlpData: TLPData = 
       case execMode:
       of ExecModeAuto:
         if target.endsWith(FILE_COMPILED):   readAllFileBytes(target)
@@ -505,7 +334,7 @@ proc parseRun(parser: var OptParser, debugMode: int) =
       of ExecModeByte: readAllFileBytes(target)
 
     # Initialize program stack and base executor
-    var EXEC = hexData.initTLP
+    var EXEC = tlpData.initTLP
 
     if debugMode > 0: echo EXEC.exec.path.dataRoot
 
@@ -549,20 +378,3 @@ when isMainModule:
         echo VERSION_STRING
         printHelp()
         break
-
-  # const prg = "$$$(/(/("
-  # const prg = "$$$(([]!)/([])):((/[])/([]!/[]!)):(/[])::[/([]!/[])]!:[[[]]!]:[([]!)/[/[]!]!]:[/([]!/[])]!:[([]!)/(/[])]:((/[])/[]):(/([]!)):([[]]!/[[]!]!):[[[]/[]]]!:"
-  
-  # Helloworld 2
-  # const prg = "))))))))/:((((((S...............%(>#>[>[>;/.==>;=/>[>%/!.:......"
-
-  # Cat
-  # const prg = "$$$>;:<"
-
-  # Uplev test
-  # const prg = "$..<"
-
-  # Truth machine
-  # const prg = "$$$;(*[=[*]*S=S=S=S=S(!)=S*S=S=S(/!)=!*S*S=S=S)!=[=]*S=S=S=S((!))=[=]*S=S=S=S(!)=[=]*S=S=S=S(!)!$$$$((/(/(/(/([]!/[])))))/(((([]!/[]!)/([]!/[]!))/(([/[]!]!/([]/[]))/([/[]!]!/[/[]]!)))/((([/[]!]!/[/[]!])/(([]/[])/([])))/((([])/([]))/(([])/([]/[]!))))))((/(/(/(/#))))SSSSSSS"
-
-  

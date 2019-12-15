@@ -179,13 +179,13 @@ proc ascendPath*(reader: var Reader) {.inline.} =
     while reader.pow > 0'u64:
       halveReader(reader)
 
-proc getHex*(reader: Reader): uint8 {.inline.} =
+proc getHex*(reader: Reader): range[0'i8..15'i8] {.inline.} =
   if reader.pow != 2: Unreachable("getHex: Reader pow not 2")
   let node = reader.node
-  case node.kind:
-    of DnkPOS: return 0xF'u8
-    of DnkNEG: return 0x0'u8
-    of Dnk8: return (if reader.idx == 0: node.val shr 4 else: node.val and 0xF'u8)
+  return case node.kind:
+    of DnkPOS: 0xF'i8
+    of DnkNEG: 0x0'i8
+    of Dnk8: (if reader.idx == 0: (node.val shr 4).int8 else: (node.val and 0xF'u8).int8)
     of DnkMIX: Unreachable("getHex: DnkMIX cannot be pow2")
 
 proc getByte*(reader: Reader): uint8 {.inline.} =
@@ -505,7 +505,7 @@ proc inputReader*(reader: var Reader, inputStream: File) {.inline.} =
       # EOF -> Read EOFs (-1)
       for ch in charbuf.mitems:
         ch = 0xFF'u8
-    let inputTree = treeify(charbuf)
+    let inputTree = treeify(charbuf, as_hex=false)
     # '\' 92 '\r' 13 '\n' 10
     # What a terrible night to have a curse... input via human command line input always contaminated with endline
     case reader.mode:

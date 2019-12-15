@@ -3,6 +3,7 @@ import dao_errors
 
 const
   DEBUG = true
+  LOOKUP_OP_SYM* = ".!/)%#>=(<:S[*$;"
 
 type
   DaoNodeKind* = enum
@@ -57,25 +58,52 @@ type
 
   StoredReaderRef* = ref StoredReader
 
+  ExecutorStack* = seq[StoredExecutor]
+
   Path* = ref object
     owner*:       Path         ##  Parent program (may be nil)
     child*:       Path         ##  Child program (may be nil)
     depth*:       uint64       ##  How deep is this in the program tree?
     dataRoot*:    DaoNode      ##  Points to the root of the data owned by this path
 
+  TLPData* = tuple[firstHex: DaoNode, root: DaoNode]
 
-proc treeify*(bytes: openarray[int8 | uint8]): tuple[firstHex: DaoNode, root: DaoNode]=
+
+proc initPath*(parent: Path = nil, dataRoot: DaoNode = nil): Path =
+  ## Initialize a new path from a parent, or if parentless, the TLP.
+  result.new
+  result.owner = parent
+  result.child = nil
+  if parent != nil:
+    result.depth = parent.depth + 1
+    parent.child = result
+  else:
+    result.depth = 0
+  if dataRoot == nil: result.dataRoot = DaoNode(kind: Dnk8, parent: nil, pow: 0, val: 0'u8)
+  else:               result.dataRoot = dataRoot
+
+
+proc treeify*(bytes: openarray[int8 | uint8], as_hex: static bool): TLPData =
+  ## Construct a DaoNode which contains the data from `bytes`.
+  ## If `as_hex`, it assumes that each byte in `byte` is a single hexadecimal (4 bits).
+  ##   Excess information will be pruned away!
+  ##  If not `as_hex`, it will directly write the bytes into DaoNodes of kind Dnk8.
+
   if bytes.len == 0: return
 
   var nodes = initDeque[DaoNode]()
 
-  for i in countup(0, bytes.len - 2, 2):
-    let val = (bytes[i] shl 4) or bytes[i+1]
-    nodes.addLast(DaoNode(kind: Dnk8, pow: 3, val: val, parent: nil))
+  when as_hex:
+    for i in countup(0, bytes.len - 2, 2):
+      let val = (bytes[i] shl 4) or bytes[i+1]
+      nodes.addLast(DaoNode(kind: Dnk8, pow: 3, val: val, parent: nil))
 
-  if bytes.len mod 2 == 1:
-    # Take care of remainder if it exists.
-    nodes.addLast DaoNode(kind: Dnk8, pow: 3, val: bytes[^1] shl 4)
+    if bytes.len mod 2 == 1:
+      # Take care of remainder if it exists.
+      nodes.addLast DaoNode(kind: Dnk8, pow: 3, val: bytes[^1] shl 4)
+  else:
+    for b in bytes:
+      nodes.addLast DaoNode(kind: Dnk8, pow: 3, val: b)
 
   result.firstHex = nodes[0]
 
