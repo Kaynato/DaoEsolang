@@ -89,6 +89,7 @@ proc printHelp() =
   echo "            1: Print the program tree and current reader state every step."
   echo "            2: Print the above and also the current exec reader state every step."
   echo "            3: Print the above and also the entire path owned by the data reader every step."
+  echo "            4: Print the above and also requires keypress to advance steps."
 
   echo ""
   echo "Commands:"
@@ -236,6 +237,7 @@ proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
         break
 
       if EXEC.exec.pow != 2:       Unreachable("moveThenGet: Exec reader has non-2 pow after program iteration: " & $(EXEC.exec.pow))
+      if debug > 3: discard stdin.readLine()
 
     if debug > 0: echo &"Exited with next_cmd {next_cmd}"
     # WARN

@@ -55,7 +55,7 @@ proc swaps*(EXEC: var Executor) =
 proc later*(EXEC: var Executor) =
   if EXEC.oplevel < 4'u8:
     ## Ordinary LATER
-    discard laterReader(EXEC.data)
+    discard laterReader(EXEC.data, true)
   else:
     # TODO potentially undefined behavior when lines at end
     discard linesReader(EXEC.data)
@@ -63,7 +63,7 @@ proc later*(EXEC: var Executor) =
 proc merge*(EXEC: var Executor) =
   if EXEC.oplevel > 6'u8: return
   ## Ascend EXEC.data
-  discard mergeReader(EXEC.data)
+  discard mergeReader(EXEC.data, true)
 
 proc sifts*(EXEC: var Executor) =
   # Todo("SIFTS is deprecated.")
@@ -73,7 +73,8 @@ proc execs*(EXEC: var Executor, STACK: var seq[StoredExecutor]) =
   if EXEC.oplevel > 7'u8: return
 
   # Exit if the exec reader would be crushed
-  if EXEC.data.path.dataRoot.pow < 2'u64: return
+  if EXEC.data.path.dataRoot.pow < 2'u64:
+    return
 
   # Copy the reader and navigate to the leftmost pow3 position in selection
   var reader = EXEC.data
@@ -81,17 +82,22 @@ proc execs*(EXEC: var Executor, STACK: var seq[StoredExecutor]) =
   case reader.mode:
   of RmPOS:
     while reader.pow < 2'u64:
-      discard mergeReader(reader)
+      discard mergeReader(reader, false)
+    while reader.pow > 2'u64:
+      halveReader(reader)
     if reader.pow == reader.node.pow:
       reader.mode = RmNODE
   of RmNODE:
-    if reader.node.pow > 2'u64:
-      while reader.node.pow > 2'u64:
+    if reader.pow > 2'u64:
+      while reader.pow > 2'u64:
         halveReader(reader)
     elif reader.pow == 2'u64:
       discard
     else:
       Unreachable("EXECS: Reader pow was < 2 despite being RmNODE")
+
+  if reader.pow != 2:
+    Unreachable("EXECS: Tried to run EXECS with reader of wrong pow. Reader: " & $reader & "\n    Path: " & $reader.path.dataRoot)
 
   # Store the old reader
   STACK.store(EXEC)

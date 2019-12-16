@@ -368,7 +368,7 @@ proc hlvrtReader*(reader: var Reader) {.inline.} =
       reader.idx = (reader.idx shl 1) + 1'u64
 
 
-proc mergeReader*(reader: var Reader, allow_ascent: static bool = true): bool {.inline.} =
+proc mergeReader*(reader: var Reader, allow_ascent: static bool): bool {.inline.} =
   ## Move the reader to parent if possible.
   ## If no parent and allow_ascent, try to move to the parent path's first bit.
   ## Return true if merge succeeded without ascent.
@@ -401,14 +401,14 @@ proc mergeReader*(reader: var Reader, allow_ascent: static bool = true): bool {.
           reader.mode = RmNODE
         return true
 
-proc laterReader*(reader: var Reader, allow_merge: static bool = true): bool {.inline.} =
+proc laterReader*(reader: var Reader, allow_merge: static bool): bool {.inline.} =
   ## If lc, move to rc. If rc, go to parent. Returns whether we moved or not (e.g. if was at top)
   case reader.mode:
     of RmNODE:
       if reader.node.parent == nil or reader.node == reader.node.parent.rc:
         # If root node or right node, defer to merge
         when allow_merge:
-          discard mergeReader(reader)
+          discard mergeReader(reader, true)
         return false
       else:
         if reader.node == reader.node.parent.lc:
@@ -420,7 +420,7 @@ proc laterReader*(reader: var Reader, allow_merge: static bool = true): bool {.i
     of RmPOS:
       if ((reader.idx and 1'u8) != 0) or (reader.node.pow == 0):
         # If on the second virtual half of some node, or root is bit, merge
-        discard mergeReader(reader)
+        discard mergeReader(reader, true)
       # Otherwise, go to the right half
       else: inc reader.idx
       return true
@@ -436,16 +436,18 @@ proc linesReader*(reader: var Reader): bool {.inline.} =
       return true
   else:
     # We are certainly inside of DnkPOS or DnkNEG.
+    # We could also be in Dnk8...
     let pdiff = reader.node.pow - reader.pow
     if pdiff >= 64'u64:
-      Todo("moveThenGet: Index might overflow uint64")
+      Todo("LINES: Index might overflow uint64")
     # If we can move right, just move and get the value.
     if (((reader.idx + 1) shr pdiff) and 1'u64) == 0:
       # Move right and get value
       inc reader.idx
       return true
     # Otherwise, we have to actually merge out of the node itself
-    reader.mode = RmNODE
+    if reader.pow < reader.path.dataRoot.pow:
+      reader.mode = RmNODE
     reader.pow = reader.node.pow
     reader.idx = 0
   # Coming out here means we need to come out of the node :(
@@ -459,7 +461,7 @@ proc linesReader*(reader: var Reader): bool {.inline.} =
       return false
   # Now we are the left child, so move right
   if not laterReader(reader, allow_merge=false):
-    Unreachable("moveThenGet: Tried to merge despite being left child.")
+    Unreachable("LINES: Tried to merge despite being left child.")
   # Move down until pow is back to before
   while reader.pow > origPow:
     halveReader(reader)
@@ -708,7 +710,7 @@ proc doalcReader*(reader: var Reader) {.inline.} =
       parent.rc.parent = parent
       root.parent = parent
     reader.path.dataRoot = parent
-  discard mergeReader(reader)
+  discard mergeReader(reader, true)
 
 proc dealcReader*(reader: var Reader) {.inline.} = 
   let root = reader.path.dataRoot
