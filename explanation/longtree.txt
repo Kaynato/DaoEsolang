@@ -1,0 +1,47 @@
+== Longtree format
+
+Consider the data as unidirectional tape
+Initialize the first bit as 1.
+
+  1.......
+
+  $: IF LEVEL == 0:
+      i++  CAP++
+  ): IF LEVEL < 7:
+      i++
+
+  S: IF LEVEL < 3:
+      i--  CAP--   if cap 0, destroy
+  (: IF LEVEL < 7:
+      i--
+  [: IF LEVEL < 7:
+      i--
+        IF LEVEL == 0:
+          d[0 ..< i] = 1   d[i] = 0
+
+  =: IF LEVEL < 5:
+      Skip if d[0] != d[i]
+  *: IF LEVEL < 3:
+      Skip if d[0] <= d[i]
+
+  !: IF LEVEL == 0:
+      if i == 1: swap(d[0], d[1])
+      if i >  1:
+        tmp = d[i-1]
+        d[0 ..< i] = d[i]
+        d[i] = tmp
+  .: NOP
+
+  <: IF LEVEL < 9:
+      LEVEL++
+      GOTO START
+  >: IF LEVEL > 0:
+      LEVEL--
+
+  /: don't use
+  #: don't use
+
+  :: don't use
+  ;: don't use
+
+  %: no

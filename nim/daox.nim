@@ -70,6 +70,73 @@ const
 		              Version 0.6.0
 """
 
+proc printHelp() =
+  echo "Argument syntax: [main args] [command] [command args]"
+  echo ""
+  echo "Main args:"
+
+  echo "    "
+  echo "    (--version / -v)"
+  echo "        Prints the version message."
+
+  # TODO  Bin/Hex viewing of path (complete with shorthand for pure nodes larger than a group of 8)
+  # TODO  Print path data as daoyu program in daoyu symbols
+  # sifts 
+  echo "    "
+  echo "    (--debug / -d)=<value>"
+  echo "        Set the debug value."
+  echo "            0: Same as not setting debug."
+  echo "            1: Print the program tree and current reader state every step."
+  echo "            2: Print the above and also the current exec reader state every step."
+  echo "            3: Print the above and also the entire path owned by the data reader every step."
+
+  echo ""
+  echo "Commands:"
+
+  echo "    "
+  echo "    (help)"
+  echo "        Prints the helpfile message."
+
+  echo "    "
+  echo "    (interpret / run / r) (--mode / -m) <auto/sym/hex/raw> <filename>"
+  echo "        Interpret the file as a Daoyu program."
+  echo "        Use -m to set interpretation mode."
+  echo "        "
+  echo "        `auto` (default)"
+  echo "            By default, -m is `auto` and infers the mode of the file from its file extension. "
+  echo "            .dao   -> SYM interpretation"
+  echo "            .wuwei -> RAW interpretation"
+  echo "        "
+  echo "        `sym`"
+  echo "            In `sym` interpretation mode, the Daoyu symbols are read from file."
+  echo "            Invalid characters will be ignored."
+  echo "            Characters in a line after `@` will be treated as comments and ignored."
+  echo "        "
+  echo "        `hex`"
+  echo "            In `hex` interpretation mode, the string representations of hexadecimal characters will be read from file."
+  echo "            e.g. 0123456789ABCDEF"
+  echo "            Invalid characters will be ignored."
+  echo "            Characters in a line after `@` will be treated as comments and ignored."
+  echo "        "
+  echo "        `raw`"
+  echo "            In `raw` interpretation mode, the raw bytes will be read."
+
+  # TODO ver 0.8.0
+  # echo ""
+  # echo "(listen) (--mode / -m) <auto/sym/hex/raw> <port>"
+  # echo "\tListen to the port for daoyu programs."
+
+  # TODO ver 0.9.0
+  # echo ""
+  # echo "(repl / interact) (--mode / -m) <auto/sym/hex/raw>"
+  # echo "\tBegin an interactive REPL daoyu environment."
+  # echo "\tInputs will be dynamically added to a top level program."
+  # echo "\tBehavior may differ from standard interpretation."
+
+  # echo ""
+  # echo "\t"
+  # echo "\t\t"
+
 ## Operation implementation
 proc symToVal(ch: char): uint8 =
   ## Convert symbols into bytes
@@ -120,6 +187,9 @@ proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
   while true:
 
     while next_cmd != 16'i8:
+
+      if EXEC.exec.pow != 2:       Unreachable("moveThenGet: Exec reader has non-2 pow before command: " & $(EXEC.exec.pow))
+
       {.computedGoto.}
       case next_cmd:
         of 0x0: discard
@@ -141,8 +211,9 @@ proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
         of 0x10: discard
 
       if debug > 0: echo fmt"op {LOOKUP_OP_SYM[next_cmd]} lv {EXEC.oplevel} : data : {EXEC.data} "
-      if debug > 1: echo fmt"          : path : {EXEC.data.path.dataRoot}"
-      if EXEC.exec.pow != 2:       Unreachable("moveThenGet: Exec reader has non-2 pow")
+      if debug > 1: echo fmt"          : exec : {EXEC.exec}"
+      if debug > 2: echo fmt"          : path : {EXEC.data.path.dataRoot}"
+      if EXEC.exec.pow != 2:       Unreachable("moveThenGet: Exec reader has non-2 pow before program iteration: " & $(EXEC.exec.pow))
       if EXEC.exec.mode == RmNODE: Unreachable("moveThenGet: Exec reader was pow 2 but was reading Nodes")
 
       # If data path destroyed, stop execution
@@ -164,6 +235,8 @@ proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
       else:
         break
 
+      if EXEC.exec.pow != 2:       Unreachable("moveThenGet: Exec reader has non-2 pow after program iteration: " & $(EXEC.exec.pow))
+
     if debug > 0: echo &"Exited with next_cmd {next_cmd}"
     # WARN
     # Coming out here means that the EXEC has terminated.
@@ -172,74 +245,6 @@ proc run(EXEC: var Executor, inputStream: File, debug: int = 0) =
       if debug > 0: echo "Stack length zero, terminating execution"
       return
     EXEC = STACK.retrieve
-
-proc printHelp() =
-  echo "Argument syntax: [main args] [command] [command args]"
-  echo ""
-  echo "Main args:"
-
-  echo "    "
-  echo "    (--version / -v)"
-  echo "        Prints the version message."
-
-  # TODO  Bin/Hex viewing of path (complete with shorthand for pure nodes larger than a group of 8)
-  # TODO  Print path data as daoyu program in daoyu symbols
-  # sifts 
-  echo "    "
-  echo "    (--debug / -d)=<value>"
-  echo "        Set the debug value."
-  echo "            0: Same as not setting debug."
-  echo "            1: Print the program tree and current reader state every step."
-  echo "            2: Print the above and also the entire selected path every step."
-
-  echo ""
-  echo "Commands:"
-
-  echo "    "
-  echo "    (help)"
-  echo "        Prints the helpfile message."
-
-  echo "    "
-  echo "    (interpret / run / r) (--mode / -m) <auto/sym/hex/raw> <filename>"
-  echo "        Interpret the file as a Daoyu program."
-  echo "        Use -m to set interpretation mode."
-  echo "        "
-  echo "        `auto` (default)"
-  echo "            By default, -m is `auto` and infers the mode of the file from its file extension. "
-  echo "            .dao   -> SYM interpretation"
-  echo "            .wuwei -> RAW interpretation"
-  echo "        "
-  echo "        `sym`"
-  echo "            In `sym` interpretation mode, the Daoyu symbols are read from file."
-  echo "            Invalid characters will be ignored."
-  echo "            Characters in a line after `@` will be treated as comments and ignored."
-  echo "        "
-  echo "        `hex`"
-  echo "            In `hex` interpretation mode, the string representations of hexadecimal characters will be read from file."
-  echo "            e.g. 0123456789ABCDEF"
-  echo "            Invalid characters will be ignored."
-  echo "            Characters in a line after `@` will be treated as comments and ignored."
-  echo "        "
-  echo "        `raw`"
-  echo "            In `raw` interpretation mode, the raw bytes will be read."
-
-  # TODO ver 0.8.0
-  # echo ""
-  # echo "(listen) (--mode / -m) <auto/sym/hex/raw> <port>"
-  # echo "\tListen to the port for daoyu programs."
-
-  # TODO ver 0.9.0
-  # echo ""
-  # echo "(repl / interact) (--mode / -m) <auto/sym/hex/raw>"
-  # echo "\tBegin an interactive REPL daoyu environment."
-  # echo "\tInputs will be dynamically added to a top level program."
-  # echo "\tBehavior may differ from standard interpretation."
-
-  # echo ""
-  # echo "\t"
-  # echo "\t\t"
-
-
 
 type
   ExecMode = enum

@@ -45,7 +45,7 @@ cmd was = : data : (Path: [  1^ ] pow: 2 idx: 0 NPos: Dnk8 (x3))
 __ Enter first two bits
 cmd was ( : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
           : path : (x30)
-__ If 01XX form, turn into 10XX form. (10XX was filted out previously)
+__ If 01XX form, turn into 10XX form. (10XX was filtered out previously)
 cmd was ! : data : (Path: [  1^ ] pow: 1 idx: 0 NPos: Dnk8 (b00)) 
           : path : (x30)
 __ Then come back out

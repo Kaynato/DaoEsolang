@@ -71,8 +71,7 @@ proc store*(reader: Reader): StoredReader =
   # echo pow, " ", result.rootPow
   while pow < result.rootPow:
     if node.parent == nil:
-      echo "STORE READER: Parent of ", $(node), " at pow ", pow, " was nil but rootPow was ", result.rootPow
-      assert false
+      Unreachable("STORE: Inconsistent parent node linkage.")
     if node == node.parent.lc:
       move = (move shl 1)
     elif node == node.parent.rc:
@@ -94,6 +93,10 @@ proc store*(reader: Reader): StoredReader =
     result.moves.add(move)
     # echo "put ", move, " in moves -> ", result.moves
     result.nBitsInFirstMove = nMoves.uint64
+  else:
+    # Ended with no remaining moves
+    # Correct the first move bits to 64
+    result.nBitsInFirstMove = 64'u64
 
 proc retrieve*(stored: StoredReader): Reader =
   result.path = stored.path
@@ -139,6 +142,8 @@ proc retrieve*(stored: StoredReader): Reader =
     halveReader(result)
   # Now the reader is at the rootPow, or the correct amount of moves has been ignored.
   # Either way, we are now ready to consume the moves.
+
+  # First move
   while nBitsInFirstMove > 0'u64:
     if (move and 1'u64) == 0:
       halveReader(result)
@@ -146,6 +151,7 @@ proc retrieve*(stored: StoredReader): Reader =
       hlvrtReader(result)
     move = move shr 1
     dec nBitsInFirstMove
+
   while moves.len > 0:
     move = moves.pop()
     for _ in 0..63:
